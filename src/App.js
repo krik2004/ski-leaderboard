@@ -245,7 +245,11 @@ function App() {
 									<tr key={time.id} style={styles.tr}>
 										<td style={styles.td}>{index + 1}</td>
 										<td style={styles.td}>
-											<strong>{user.email.split('@')[0]}</strong>
+											<td style={styles.td}>
+												<td style={styles.td}>
+													<strong>{time.user_name || 'Гость'}</strong>
+												</td>
+											</td>
 										</td>
 										<td style={styles.td}>
 											<span style={styles.timeBadge}>
@@ -299,13 +303,16 @@ function AddTimeForm({ user, onTimeAdded }) {
 		setMessage('')
 
 		try {
-			const { error } = await supabase.from('lap_times').insert({
-				user_id: user.id,
-				time_seconds: parseInt(timeSeconds),
-				comment: comment || null,
-				date: new Date().toISOString(),
-				user_name: user.email.split('@')[0], // Важно!
-			})
+const { data, error } = await supabase
+	.from('lap_times')
+	.select(
+		`
+    *,
+    profiles!lap_times_user_id_fkey (*)
+  `
+	)
+	.order('time_seconds', { ascending: true })
+	.limit(10)
 
 			if (error) throw error
 
