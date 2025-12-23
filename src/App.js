@@ -254,131 +254,100 @@ function App() {
 	)
 }
 // Компонент для добавления заездов
+// ЗАМЕНИ весь компонент AddTimeForm на этот (простой рабочий):
 function AddTimeForm({ user, onTimeAdded }) {
-	const [timeSeconds, setTimeSeconds] = useState('')
-	const [comment, setComment] = useState('')
-	const [loading, setLoading] = useState(false)
-	const [message, setMessage] = useState('')
+  const [timeSeconds, setTimeSeconds] = useState('');
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-	async function handleSubmit(e) {
-		e.preventDefault()
+  async function handleSubmit(e) {
+    e.preventDefault();
+    
+    if (!timeSeconds || timeSeconds <= 0) {
+      setMessage('Введите время в секундах');
+      return;
+    }
 
-		if (!timeSeconds || timeSeconds <= 0) {
-			setMessage('Введите время в секундах')
-			return
-		}
+    setLoading(true);
+    setMessage('');
 
-		setLoading(true)
-		setMessage('')
+    try {
+      // ПРОСТОЙ INSERT без JOIN
+      const { error } = await supabase
+        .from('lap_times')
+        .insert({
+          user_id: user.id,
+          time_seconds: parseInt(timeSeconds),
+          comment: comment || null,
+          date: new Date().toISOString(),
+          user_name: user.email.split('@')[0] // Используем email как имя
+        });
 
-		try {
-const { data, error } = await supabase
-	.from('lap_times')
-	.select(
-		`
-    *,
-    profiles!lap_times_user_id_fkey (*)
-  `
-	)
-	.order('time_seconds', { ascending: true })
-	.limit(10)
+      if (error) throw error;
 
-			if (error) throw error
+      setMessage('✅ Заезд добавлен!');
+      setTimeSeconds('');
+      setComment('');
+      
+      onTimeAdded();
+      
+    } catch (error) {
+      setMessage('❌ Ошибка: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-			setMessage('✅ Заезд добавлен!')
-			setTimeSeconds('')
-			setComment('')
+  return (
+    <div style={addFormStyles.container}>
+      <h3 style={addFormStyles.title}>📝 Добавить новый заезд</h3>
+      
+      {message && (
+        <div style={addFormStyles.message}>
+          {message}
+        </div>
+      )}
 
-			// Обновляем таблицу
-			onTimeAdded()
-		} catch (error) {
-			setMessage('❌ Ошибка: ' + error.message)
-		} finally {
-			setLoading(false)
-		}
-	}
+      <form onSubmit={handleSubmit} style={addFormStyles.form}>
+        <div style={addFormStyles.formRow}>
+          <div style={addFormStyles.inputGroup}>
+            <label style={addFormStyles.label}>Время (секунды)</label>
+            <input
+              type="number"
+              placeholder="Например: 120 (2 минуты)"
+              value={timeSeconds}
+              onChange={(e) => setTimeSeconds(e.target.value)}
+              style={addFormStyles.input}
+              min="1"
+              required
+              disabled={loading}
+            />
+          </div>
+          
+          <div style={addFormStyles.inputGroup}>
+            <label style={addFormStyles.label}>Комментарий</label>
+            <input
+              type="text"
+              placeholder="Погода, состояние трассы..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              style={addFormStyles.input}
+              disabled={loading}
+            />
+          </div>
+        </div>
 
-	return (
-		<div style={addFormStyles.container}>
-			<h3 style={addFormStyles.title}>📝 Добавить новый заезд</h3>
-
-			{message && <div style={addFormStyles.message}>{message}</div>}
-
-			<form onSubmit={handleSubmit} style={addFormStyles.form}>
-				<div style={addFormStyles.formRow}>
-					<div style={addFormStyles.inputGroup}>
-						<label style={addFormStyles.label}>Время (секунды)</label>
-						<input
-							type='number'
-							placeholder='Например: 120 (2 минуты)'
-							value={timeSeconds}
-							onChange={e => setTimeSeconds(e.target.value)}
-							style={addFormStyles.input}
-							min='1'
-							required
-							disabled={loading}
-						/>
-					</div>
-
-					<div style={addFormStyles.inputGroup}>
-						<label style={addFormStyles.label}>
-							Комментарий (необязательно)
-						</label>
-						<input
-							type='text'
-							placeholder='Погода, состояние трассы...'
-							value={comment}
-							onChange={e => setComment(e.target.value)}
-							style={addFormStyles.input}
-							disabled={loading}
-						/>
-					</div>
-				</div>
-
-				<button
-					type='submit'
-					style={loading ? addFormStyles.buttonLoading : addFormStyles.button}
-					disabled={loading}
-				>
-					{loading ? 'Добавляем...' : '➕ Добавить заезд'}
-				</button>
-			</form>
-
-			<div style={addFormStyles.examples}>
-				<p>Примеры времени:</p>
-				<div style={addFormStyles.exampleButtons}>
-					<button
-						type='button'
-						onClick={() => setTimeSeconds('60')}
-						style={addFormStyles.exampleButton}
-					>
-						1:00
-					</button>
-					<button
-						type='button'
-						onClick={() => setTimeSeconds('90')}
-						style={addFormStyles.exampleButton}
-					>
-						1:30
-					</button>
-					<button
-						type='button'
-						onClick={() => setTimeSeconds('120')}
-						style={addFormStyles.exampleButton}
-					>
-						2:00
-					</button>
-					<button
-						type='button'
-						onClick={() => setTimeSeconds('150')}
-						style={addFormStyles.exampleButton}
-					>
-						2:30
-					</button>
-				</div>
-			</div>
-		</div>
-	)
+        <button 
+          type="submit" 
+          style={loading ? addFormStyles.buttonLoading : addFormStyles.button}
+          disabled={loading}
+        >
+          {loading ? 'Добавляем...' : '➕ Добавить заезд'}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 // Стили для формы добавления
