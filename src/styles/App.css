@@ -1,0 +1,263 @@
+/* Основные стили */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
+	padding: 20px;
+}
+
+.container {
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+/* Карточки */
+.auth-card, .main-card, .profile-card, .leaderboard-card, .add-form {
+	background: white;
+	border-radius: 12px;
+	padding: 30px;
+	box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+	margin-bottom: 20px;
+}
+
+.auth-card {
+	max-width: 500px;
+	margin: 40px auto;
+}
+
+/* Хедер */
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30px;
+	flex-wrap: wrap;
+	gap: 15px;
+}
+
+.title {
+	color: white;
+	font-size: 2.5rem;
+	text-align: center;
+	margin-bottom: 30px;
+	font-weight: bold;
+}
+
+.user-info {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	color: white;
+}
+
+.user-email {
+	background: rgba(255,255,255,0.1);
+	padding: 8px 12px;
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+/* Формы */
+.auth-form, .profile-form {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	margin-bottom: 25px;
+}
+
+.form-row {
+	display: flex;
+	gap: 15px;
+	margin-bottom: 15px;
+}
+
+.form-row input {
+	flex: 1;
+}
+
+input, button {
+	padding: 12px 16px;
+	border-radius: 8px;
+	font-size: 16px;
+	border: 1px solid #ddd;
+}
+
+input:focus {
+	outline: none;
+	border-color: #667eea;
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+input.disabled {
+	background: #f3f4f6;
+	color: #6b7280;
+}
+
+label {
+	display: block;
+	margin-bottom: 8px;
+	color: #555;
+	font-weight: 500;
+	font-size: 14px;
+}
+
+/* Кнопки */
+button {
+	cursor: pointer;
+	font-weight: 600;
+	border: none;
+	transition: background 0.3s;
+}
+
+.primary-btn {
+	background: #3b82f6;
+	color: white;
+}
+
+.primary-btn:hover { background: #2563eb; }
+.primary-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+.danger-btn {
+	background: #ef4444;
+	color: white;
+}
+
+.danger-btn:hover { background: #dc2626; }
+
+.success-btn {
+	background: #10b981;
+	color: white;
+}
+
+.success-btn:hover { background: #059669; }
+
+.toggle-btn {
+	background: none;
+	color: #3b82f6;
+	text-decoration: underline;
+	cursor: pointer;
+	border: none;
+	width: 100%;
+	padding: 10px;
+}
+
+/* Таблица */
+.leaderboard-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 20px 0;
+}
+
+.leaderboard-table th {
+	background: #f9fafb;
+	padding: 15px;
+	text-align: left;
+	color: #555;
+	font-weight: 600;
+	border-bottom: 2px solid #e5e7eb;
+}
+
+.leaderboard-table td {
+	padding: 15px;
+	border-bottom: 1px solid #f3f4f6;
+	color: #333;
+}
+
+.leaderboard-table tr:hover {
+	background: #f9fafb;
+}
+
+.leaderboard-table tr.my-time {
+	background: #f0f9ff;
+}
+
+.time-badge {
+	background: #10b981;
+	color: white;
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-weight: 600;
+	font-size: 14px;
+}
+
+/* Уведомления */
+.message-box {
+	padding: 15px;
+	border-radius: 8px;
+	margin-bottom: 20px;
+	text-align: center;
+}
+
+.message-box.success {
+	background: #d1fae5;
+	color: #065f46;
+	border: 1px solid #a7f3d0;
+}
+
+.message-box.error {
+	background: #fee2e2;
+	color: #991b1b;
+	border: 1px solid #fecaca;
+}
+
+.no-data {
+	text-align: center;
+	padding: 40px;
+	color: #666;
+	font-size: 18px;
+}
+
+/* Вкладки */
+.tabs {
+	display: flex;
+	margin-bottom: 20px;
+	background: rgba(255,255,255,0.1);
+	border-radius: 10px;
+	padding: 5px;
+}
+
+.tab {
+	flex: 1;
+	padding: 12px;
+	background: none;
+	border: none;
+	color: white;
+	cursor: pointer;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 500;
+}
+
+.tab.active {
+	background: white;
+	color: #764ba2;
+	font-weight: 600;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+	.header {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.form-row {
+		flex-direction: column;
+	}
+	
+	.leaderboard-table {
+		font-size: 14px;
+	}
+	
+	.leaderboard-table th,
+	.leaderboard-table td {
+		padding: 10px 8px;
+	}
+}
