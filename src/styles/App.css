@@ -261,3 +261,254 @@ button {
 		padding: 10px 8px;
 	}
 }
+/* Стили для модели лыж */
+.ski-model {
+	font-size: 12px;
+}
+
+.model-badge {
+	background: #3b82f6;
+	color: white;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.no-model {
+	color: #9ca3af;
+	font-style: italic;
+}
+
+.you-badge {
+	background: #10b981;
+	color: white;
+	font-size: 10px;
+	padding: 2px 6px;
+	border-radius: 10px;
+	margin-left: 8px;
+}
+
+.table-controls {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+	flex-wrap: wrap;
+}
+
+.small-btn {
+	padding: 6px 12px;
+	font-size: 12px;
+	background: #f3f4f6;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.small-btn:hover {
+	background: #e5e7eb;
+}
+
+.table-footer {
+	margin-top: 20px;
+	padding-top: 15px;
+	border-top: 1px solid #e5e7eb;
+	font-size: 14px;
+	color: #6b7280;
+	display: flex;
+	justify-content: space-between;
+}
+
+.form-tips {
+	margin-top: 15px;
+	padding: 10px;
+	background: #f0f9ff;
+	border-radius: 8px;
+	font-size: 14px;
+	color: #0369a1;
+}
+
+.custom-ski-input {
+	margin-top: 8px;
+	width: 100%;
+}
+
+datalist {
+	position: absolute;
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.helper-text {
+	font-size: 12px;
+	color: #6b7280;
+	margin-top: 4px;
+	display: block;
+}
+
+.profile-info {
+	margin-top: 25px;
+	padding: 15px;
+	background: #f8fafc;
+	border-radius: 8px;
+	border-left: 4px solid #3b82f6;
+}
+
+.profile-info h4 {
+	margin-bottom: 10px;
+	color: #1e40af;
+}
+
+.profile-info ul {
+	padding-left: 20px;
+	color: #4b5563;
+	line-height: 1.6;
+}
+
+.profile-info li {
+	margin-bottom: 5px;
+}
+
+/* Стили для загрузки файлов */
+.file-upload {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.file-upload-label {
+	flex: 1;
+}
+
+.file-upload-label input[type="file"] {
+	display: none;
+}
+
+.file-upload-button {
+	display: block;
+	padding: 10px 15px;
+	background: #f3f4f6;
+	border: 2px dashed #d1d5db;
+	border-radius: 8px;
+	text-align: center;
+	cursor: pointer;
+	color: #4b5563;
+	transition: all 0.3s;
+}
+
+.file-upload-button:hover {
+	background: #e5e7eb;
+	border-color: #9ca3af;
+}
+
+.remove-file-btn {
+	background: #ef4444;
+	color: white;
+	border: none;
+	border-radius: 50%;
+	width: 30px;
+	height: 30px;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.file-hint {
+	display: block;
+	margin-top: 5px;
+	font-size: 12px;
+	color: #6b7280;
+}
+
+/* Стили для статуса подтверждения */
+.verification-badge {
+	background: #10b981;
+	color: white;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.not-verified {
+	background: #f59e0b;
+	color: white;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.verification-info {
+	margin-top: 15px;
+}
+
+.verification-badge.info {
+	background: #dbeafe;
+	color: #1e40af;
+	padding: 10px;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+/* Стили для ссылки на трек */
+.track-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: #3b82f6;
+	text-decoration: none;
+	padding: 6px 10px;
+	background: #eff6ff;
+	border-radius: 8px;
+	font-size: 13px;
+}
+
+.track-link:hover {
+	background: #dbeafe;
+	text-decoration: underline;
+}
+
+.track-stats {
+	font-size: 11px;
+	color: #6b7280;
+	margin-left: 5px;
+}
+
+.no-track {
+	color: #9ca3af;
+	font-style: italic;
+}
+
+.verification-stats {
+	margin-top: 20px;
+	padding: 15px;
+	background: #f0f9ff;
+	border-radius: 8px;
+	font-size: 14px;
+	color: #0369a1;
+	display: flex;
+	justify-content: space-between;
+}
+
+/* Адаптивность для таблицы */
+.table-responsive {
+	overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+	.leaderboard-table {
+		font-size: 13px;
+	}
+	
+	.leaderboard-table th,
+	.leaderboard-table td {
+		padding: 8px 6px;
+	}
+	
+	.verification-badge,
+	.not-verified {
+		font-size: 10px;
+		padding: 3px 6px;
+	}
+}

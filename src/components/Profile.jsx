@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export default function Profile({ user, onUpdate }) {
 	const [username, setUsername] = useState('')
+	const [skiModel, setSkiModel] = useState('')
 	const [loading, setLoading] = useState(false)
 	const [message, setMessage] = useState('')
 
@@ -13,95 +14,112 @@ export default function Profile({ user, onUpdate }) {
 	async function loadProfile() {
 		const { data } = await supabase
 			.from('profiles')
-			.select('username')
+			.select('username, ski_model')
 			.eq('id', user.id)
 			.single()
-		if (data?.username) setUsername(data.username)
-	}
-async function handleSave(e) {
-	e.preventDefault()
-	if (!username.trim()) return
 
-	setLoading(true)
-	setMessage('')
-
-	try {
-		// 1. Получаем текущую сессию
-		const {
-			data: { session },
-		} = await supabase.auth.getSession()
-		if (!session) throw new Error('Нет активной сессии')
-
-		const userId = session.user.id
-
-		// 2. Проверяем существует ли профиль
-		const { data: existingProfile } = await supabase
-			.from('profiles')
-			.select('id')
-			.eq('id', userId)
-			.single()
-
-		// 3. Если профиля нет - создаем, если есть - обновляем
-		const { error: profileError } = await supabase.from('profiles').upsert({
-			id: userId,
-			username: username.trim(),
-			full_name: username.trim(),
-			updated_at: new Date().toISOString(),
-			...(existingProfile ? {} : { created_at: new Date().toISOString() }),
-		})
-
-		if (profileError) {
-			console.error('Ошибка профиля:', profileError)
-			throw new Error('Не удалось сохранить профиль: ' + profileError.message)
+		if (data) {
+			setUsername(data.username || '')
+			setSkiModel(data.ski_model || '')
 		}
-
-		// 4. Обновляем заезды
-		const { error: timesError } = await supabase
-			.from('lap_times')
-			.update({ user_name: username.trim() })
-			.eq('user_id', userId)
-
-		if (timesError) {
-			console.error('Ошибка обновления заездов:', timesError)
-			// Не прерываем - главное профиль сохранился
-		}
-
-		setMessage('✅ Профиль обновлен!')
-		onUpdate?.()
-	} catch (error) {
-		setMessage('❌ Ошибка: ' + error.message)
-		console.error('Полная ошибка:', error)
-	} finally {
-		setLoading(false)
 	}
-}
+
+	async function handleSave(e) {
+		e.preventDefault()
+		if (!username.trim()) return
+
+		setLoading(true)
+		setMessage('')
+
+		try {
+			const {
+				data: { session },
+			} = await supabase.auth.getSession()
+			if (!session) throw new Error('Нет сессии')
+
+			const userId = session.user.id
+
+			// Обновляем профиль с моделью лыж
+			const { error: profileError } = await supabase.from('profiles').upsert({
+				id: userId,
+				username: username.trim(),
+				ski_model: skiModel.trim() || null,
+				updated_at: new Date().toISOString(),
+			})
+
+			if (profileError) throw profileError
+
+			// Обновляем ВСЕ заезды пользователя
+			const { error: timesError } = await supabase
+				.from('lap_times')
+				.update({
+					user_name: username.trim(),
+					ski_model: skiModel.trim() || null,
+				})
+				.eq('user_id', userId)
+
+			if (timesError) {
+				console.log('Ошибка обновления заездов (не критично):', timesError)
+			}
+
+			setMessage('✅ Профиль обновлен!')
+			onUpdate?.()
+		} catch (error) {
+			setMessage('❌ Ошибка: ' + error.message)
+			console.error('Ошибка:', error)
+		} finally {
+			setLoading(false)
+		}
+	}
 
 	return (
 		<div className='profile-card'>
 			<h2>👤 Мой профиль</h2>
-			{message && <div className='message-box'>{message}</div>}
+			{message && <div className='message-box success'>{message}</div>}
 
 			<form onSubmit={handleSave} className='profile-form'>
-				<div>
-					<label>Имя в таблице:</label>
+				<div className='form-group'>
+					<label>Имя в таблице *</label>
 					<input
 						type='text'
 						value={username}
 						onChange={e => setUsername(e.target.value)}
-						placeholder='Придумайте имя'
-						minLength='3'
+						placeholder='Ваше имя'
+						minLength='2'
 						required
 						disabled={loading}
 					/>
 				</div>
 
-				<div>
-					<label>Email:</label>
-					<input type='text' value={user.email} disabled className='disabled' />
+				<div className='form-group'>
+					<label>Модель лыж (необязательно)</label>
+					<input
+						type='text'
+						value={skiModel}
+						onChange={e => setSkiModel(e.target.value)}
+						placeholder='Модель ваших лыж'
+						disabled={loading}
+					/>
 				</div>
 
-				<button type='submit' disabled={loading}>
-					{loading ? 'Сохранение...' : '💾 Сохранить'}
+				<div className='form-group'>
+					<label>Email</label>
+					<input type='text' value={user.email} disabled className='disabled' />
+				</div>
+				<div className='profile-info'>
+					<h4>📝 Зачем указывать модель лыж?</h4>
+					<ul>
+						<li>Сравнивать результаты на одинаковых лыжах</li>
+						<li>Видеть какие лыжи быстрее на вашей трассе</li>
+						<li>Делиться опытом</li>
+					</ul>
+				</div>
+				<button
+					type='submit'
+					className='primary-btn'
+					disabled={loading || !username.trim()}
+				>
+					{loading ? '💾 Сохранение...' : '💾 Сохранить'}
 				</button>
 			</form>
 		</div>
