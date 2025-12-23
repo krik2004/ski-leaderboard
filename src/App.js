@@ -26,52 +26,21 @@ function App() {
 	}
 
 	async function loadTimes() {
-		console.log('Начинаем загрузку данных...')
+		console.log('Загрузка данных...')
 
-		try {
-			// Правильный JOIN запрос
-			const { data, error } = await supabase
-				.from('lap_times')
-				.select(
-					`
-        id,
-        user_id,
-        time_seconds,
-        date,
-        comment,
-        created_at,
-        profiles!inner (
-          username,
-          full_name
-        )
-      `
-				)
-				.order('time_seconds', { ascending: true })
-				.limit(10)
+		// ПРОСТОЙ ЗАПРОС - работает всегда
+		const { data, error } = await supabase
+			.from('lap_times')
+			.select('*')
+			.order('time_seconds', { ascending: true })
+			.limit(10)
 
-			console.log('Результат загрузки:', { data, error })
-
-			if (error) {
-				console.error('Ошибка загрузки:', error)
-				// Fallback: простой запрос без JOIN
-				const { data: simpleData, error: simpleError } = await supabase
-					.from('lap_times')
-					.select('*')
-					.order('time_seconds', { ascending: true })
-					.limit(10)
-
-				if (simpleError) {
-					setMessage('Ошибка загрузки данных')
-				} else {
-					setTimes(simpleData)
-				}
-			} else {
-				console.log('Данные загружены:', data?.length, 'записей')
-				setTimes(data || [])
-			}
-		} catch (err) {
-			console.error('Ошибка:', err)
+		if (error) {
+			console.error('Ошибка загрузки:', error)
 			setMessage('Ошибка загрузки данных')
+		} else {
+			console.log('Успешно загружено:', data?.length, 'записей')
+			setTimes(data || [])
 		}
 	}
 
