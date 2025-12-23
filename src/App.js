@@ -252,15 +252,22 @@ const [activeTab, setActiveTab] = useState('leaderboard')
 		try {
 			if (isLogin) {
 				// Вход
-				const { error } = await supabase.auth.signInWithPassword({
+				const { data, error } = await supabase.auth.signInWithPassword({
 					email,
 					password,
 				})
 				if (error) throw error
+
+				// ВАЖНО: Обновляем состояние пользователя!
+				setUser(data.user)
 				setMessage('✅ Вход выполнен успешно!')
+
+				// Очищаем форму
+				setEmail('')
+				setPassword('')
 			} else {
 				// Регистрация
-				const { error } = await supabase.auth.signUp({
+				const { data, error } = await supabase.auth.signUp({
 					email,
 					password,
 					options: {
@@ -270,25 +277,33 @@ const [activeTab, setActiveTab] = useState('leaderboard')
 					},
 				})
 				if (error) throw error
+
+				// Создаем профиль ТОЛЬКО при регистрации
+				if (data.user) {
+					const { error: profileError } = await supabase
+						.from('profiles')
+						.upsert({
+							id: data.user.id,
+							username: email.split('@')[0] + Math.floor(Math.random() * 1000),
+							full_name: email.split('@')[0],
+						})
+
+					if (profileError) {
+						console.log('Ошибка создания профиля:', profileError)
+					} else {
+						console.log('Профиль создан')
+					}
+				}
+
 				setMessage('✅ Регистрация успешна! Теперь войдите')
 				setIsLogin(true)
+				setEmail('')
+				setPassword('')
 			}
 		} catch (error) {
 			setMessage('❌ Ошибка: ' + error.message)
 		} finally {
 			setLoading(false)
-		}
-
-		// После успешной регистрации
-		// После успешной регистрации
-		const { error: profileError } = await supabase.from('profiles').upsert({
-			id: user.id,
-			username: email.split('@')[0] + Math.floor(Math.random() * 1000), // уникальное
-			full_name: email.split('@')[0],
-		})
-
-		if (profileError) {
-			console.log('Профиль создан с именем из email')
 		}
 	}
 
