@@ -1,6 +1,206 @@
 import React, { useState, useEffect } from 'react'
 import supabase from './supabase'
+// Добавь этот компонент в App.js (перед функцией App)
+function ProfileEdit({ user, onProfileUpdated }) {
+  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
+  // Загружаем текущий профиль
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, full_name')
+      .eq('id', user.id)
+      .single();
+    
+    if (data) {
+      setUsername(data.username || '');
+      setFullName(data.full_name || '');
+    }
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      // Обновляем профиль
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          username: username.trim(),
+          full_name: fullName.trim(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      setMessage('✅ Профиль обновлен!');
+      
+      // Обновляем имена в заездах
+      await updateLapTimesUsername(user.id, username.trim());
+      
+      onProfileUpdated?.();
+      
+    } catch (error) {
+      setMessage('❌ Ошибка: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={profileStyles.container}>
+      <h3 style={profileStyles.title}>👤 Настройки профиля</h3>
+      
+      {message && <div style={profileStyles.message}>{message}</div>}
+      
+      <form onSubmit={handleSave} style={profileStyles.form}>
+        <div style={profileStyles.formGroup}>
+          <label style={profileStyles.label}>
+            Имя пользователя (будет видно в таблице)*
+          </label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Например: ski_pro"
+            style={profileStyles.input}
+            required
+            minLength="3"
+            maxLength="20"
+            disabled={loading}
+          />
+          <div style={profileStyles.helper}>
+            Только латинские буквы, цифры и _
+          </div>
+        </div>
+        
+        <div style={profileStyles.formGroup}>
+          <label style={profileStyles.label}>Полное имя (необязательно)</label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Иван Иванов"
+            style={profileStyles.input}
+            disabled={loading}
+          />
+        </div>
+        
+        <button 
+          type="submit" 
+          style={loading ? profileStyles.buttonLoading : profileStyles.button}
+          disabled={loading}
+        >
+          {loading ? 'Сохранение...' : '💾 Сохранить профиль'}
+        </button>
+      </form>
+      
+      <div style={profileStyles.info}>
+        <p>📝 Это имя будет отображаться в таблице рейтинга</p>
+        <p>🔤 Можно изменить в любое время</p>
+      </div>
+    </div>
+  );
+}
+
+// Стили для профиля
+const profileStyles = {
+  container: {
+    backgroundColor: '#f0f9ff',
+    padding: '25px',
+    borderRadius: '12px',
+    marginBottom: '20px',
+    border: '1px solid #bae6fd'
+  },
+  title: {
+    fontSize: '1.4rem',
+    color: '#0369a1',
+    marginBottom: '20px',
+    textAlign: 'center'
+  },
+  message: {
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    textAlign: 'center'
+  },
+  form: {
+    marginBottom: '20px'
+  },
+  formGroup: {
+    marginBottom: '20px'
+  },
+  label: {
+    display: 'block',
+    marginBottom: '8px',
+    color: '#475569',
+    fontWeight: '500',
+    fontSize: '14px'
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    fontSize: '16px',
+    backgroundColor: 'white'
+  },
+  helper: {
+    fontSize: '12px',
+    color: '#64748b',
+    marginTop: '4px'
+  },
+  button: {
+    width: '100%',
+    padding: '14px',
+    backgroundColor: '#0ea5e9',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer'
+  },
+  buttonLoading: {
+    width: '100%',
+    padding: '14px',
+    backgroundColor: '#94a3b8',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'not-allowed'
+  },
+  info: {
+    marginTop: '20px',
+    padding: '15px',
+    backgroundColor: '#e0f2fe',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: '#0c4a6e'
+  }
+};
+
+// Функция для обновления имён в заездах
+async function updateLapTimesUsername(userId, newUsername) {
+  await supabase
+    .from('lap_times')
+    .update({ user_name: newUsername })
+    .eq('user_id', userId);
+}
 function App() {
 	const [user, setUser] = useState(null)
 	const [email, setEmail] = useState('')
@@ -9,7 +209,7 @@ function App() {
 	const [message, setMessage] = useState('')
 	const [times, setTimes] = useState([])
 	const [isLogin, setIsLogin] = useState(true)
-
+const [activeTab, setActiveTab] = useState('leaderboard')
 	// Проверяем авторизацию при загрузке
 	useEffect(() => {
 		checkUser()
@@ -80,14 +280,15 @@ function App() {
 		}
 
 		// После успешной регистрации
+		// После успешной регистрации
 		const { error: profileError } = await supabase.from('profiles').upsert({
 			id: user.id,
-			username: email.split('@')[0],
+			username: email.split('@')[0] + Math.floor(Math.random() * 1000), // уникальное
 			full_name: email.split('@')[0],
 		})
 
 		if (profileError) {
-			console.error('Ошибка создания профиля:', profileError)
+			console.log('Профиль создан с именем из email')
 		}
 	}
 
@@ -186,60 +387,68 @@ function App() {
 					</button>
 				</div>
 			</div>
-
 			{message && <div style={styles.messageBox}>{message}</div>}
+			{activeTab === 'leaderboard' ? (
+				<div style={styles.mainCard}>
+					<h2 style={styles.cardTitle}>🏆 Таблица лучших заездов</h2>
 
-			<div style={styles.mainCard}>
-				<h2 style={styles.cardTitle}>🏆 Таблица лучших заездов</h2>
-
-				{times.length === 0 ? (
-					<div style={styles.emptyState}>
-						<p style={styles.emptyText}>Пока никто не добавил заездов.</p>
-						<p style={styles.emptyText}>Будьте первым!</p>
-					</div>
-				) : (
-					<div style={styles.tableContainer}>
-						<table style={styles.table}>
-							<thead>
-								<tr>
-									<th style={styles.th}>Место</th>
-									<th style={styles.th}>Лыжник</th>
-									<th style={styles.th}>Время</th>
-									<th style={styles.th}>Дата</th>
-									<th style={styles.th}>Комментарий</th>
-								</tr>
-							</thead>
-							<tbody>
-								{times.map((time, index) => (
-									<tr key={time.id} style={styles.tr}>
-										<td style={styles.td}>{index + 1}</td>
-										<td style={styles.td}>
+					{times.length === 0 ? (
+						<div style={styles.emptyState}>
+							<p style={styles.emptyText}>Пока никто не добавил заездов.</p>
+							<p style={styles.emptyText}>Будьте первым!</p>
+						</div>
+					) : (
+						<div style={styles.tableContainer}>
+							<table style={styles.table}>
+								<thead>
+									<tr>
+										<th style={styles.th}>Место</th>
+										<th style={styles.th}>Лыжник</th>
+										<th style={styles.th}>Время</th>
+										<th style={styles.th}>Дата</th>
+										<th style={styles.th}>Комментарий</th>
+									</tr>
+								</thead>
+								<tbody>
+									{times.map((time, index) => (
+										<tr key={time.id} style={styles.tr}>
+											<td style={styles.td}>{index + 1}</td>
 											<td style={styles.td}>
 												<td style={styles.td}>
-													<strong>{time.user_name || 'Гость'}</strong>
+													<td style={styles.td}>
+														<strong>{time.user_name || 'Гость'}</strong>
+													</td>
 												</td>
 											</td>
-										</td>
-										<td style={styles.td}>
-											<span style={styles.timeBadge}>
-												{formatTime(time.time_seconds)}
-											</span>
-										</td>
-										<td style={styles.td}>
-											{new Date(time.date).toLocaleDateString('ru-RU')}
-										</td>
-										<td style={styles.td}>{time.comment || '—'}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				)}
+											<td style={styles.td}>
+												<span style={styles.timeBadge}>
+													{formatTime(time.time_seconds)}
+												</span>
+											</td>
+											<td style={styles.td}>
+												{new Date(time.date).toLocaleDateString('ru-RU')}
+											</td>
+											<td style={styles.td}>{time.comment || '—'}</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
 
-				<div style={styles.actions}>
-					<AddTimeForm user={user} onTimeAdded={loadTimes} />
+					<div style={styles.actions}>
+						<AddTimeForm user={user} onTimeAdded={loadTimes} />
+					</div>
 				</div>
-			</div>
+			) : (
+				<ProfileEdit
+					user={user}
+					onProfileUpdated={() => {
+						loadTimes() // Обновляем таблицу
+						setActiveTab('leaderboard') // Возвращаем к таблице
+					}}
+				/>
+			)}
 
 			<div style={styles.infoCard}>
 				<h3 style={styles.infoTitle}>📋 Как пользоваться</h3>
@@ -643,6 +852,37 @@ const styles = {
 		paddingLeft: '20px',
 		color: '#555',
 		lineHeight: '1.8',
+	},
+
+	tabs: {
+		display: 'flex',
+		marginBottom: '20px',
+		backgroundColor: 'rgba(255,255,255,0.1)',
+		borderRadius: '10px',
+		padding: '5px',
+	},
+	tab: {
+		flex: 1,
+		padding: '12px',
+		background: 'none',
+		border: 'none',
+		color: 'white',
+		cursor: 'pointer',
+		borderRadius: '8px',
+		fontSize: '16px',
+		fontWeight: '500',
+	},
+	activeTab: {
+		flex: 1,
+		padding: '12px',
+		backgroundColor: 'white',
+		border: 'none',
+		color: '#764ba2',
+		cursor: 'pointer',
+		borderRadius: '8px',
+		fontSize: '16px',
+		fontWeight: '600',
+		boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
 	},
 }
 
