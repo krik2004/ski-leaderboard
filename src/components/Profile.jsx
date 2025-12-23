@@ -18,35 +18,63 @@ export default function Profile({ user, onUpdate }) {
 			.single()
 		if (data?.username) setUsername(data.username)
 	}
+async function handleSave(e) {
+	e.preventDefault()
+	if (!username.trim()) return
 
-	async function handleSave(e) {
-		e.preventDefault()
-		if (!username.trim()) return
+	setLoading(true)
+	setMessage('')
 
-		setLoading(true)
-		try {
-			// 1. Обновляем профиль
-			const { error } = await supabase.from('profiles').upsert({
-				id: user.id,
-				username: username.trim(),
-				updated_at: new Date().toISOString(),
-			})
-			if (error) throw error
+	try {
+		// 1. Получаем текущую сессию
+		const {
+			data: { session },
+		} = await supabase.auth.getSession()
+		if (!session) throw new Error('Нет активной сессии')
 
-			// 2. Обновляем все заезды
-			await supabase
-				.from('lap_times')
-				.update({ user_name: username.trim() })
-				.eq('user_id', user.id)
+		const userId = session.user.id
 
-			setMessage('✅ Профиль обновлен!')
-			onUpdate?.()
-		} catch (error) {
-			setMessage('❌ Ошибка: ' + error.message)
-		} finally {
-			setLoading(false)
+		// 2. Проверяем существует ли профиль
+		const { data: existingProfile } = await supabase
+			.from('profiles')
+			.select('id')
+			.eq('id', userId)
+			.single()
+
+		// 3. Если профиля нет - создаем, если есть - обновляем
+		const { error: profileError } = await supabase.from('profiles').upsert({
+			id: userId,
+			username: username.trim(),
+			full_name: username.trim(),
+			updated_at: new Date().toISOString(),
+			...(existingProfile ? {} : { created_at: new Date().toISOString() }),
+		})
+
+		if (profileError) {
+			console.error('Ошибка профиля:', profileError)
+			throw new Error('Не удалось сохранить профиль: ' + profileError.message)
 		}
+
+		// 4. Обновляем заезды
+		const { error: timesError } = await supabase
+			.from('lap_times')
+			.update({ user_name: username.trim() })
+			.eq('user_id', userId)
+
+		if (timesError) {
+			console.error('Ошибка обновления заездов:', timesError)
+			// Не прерываем - главное профиль сохранился
+		}
+
+		setMessage('✅ Профиль обновлен!')
+		onUpdate?.()
+	} catch (error) {
+		setMessage('❌ Ошибка: ' + error.message)
+		console.error('Полная ошибка:', error)
+	} finally {
+		setLoading(false)
 	}
+}
 
 	return (
 		<div className='profile-card'>
