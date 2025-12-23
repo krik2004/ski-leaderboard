@@ -512,3 +512,98 @@ datalist {
 		padding: 3px 6px;
 	}
 }
+
+
+/* Стили для комментариев в таблице */
+.comment {
+	max-width: 200px;
+	min-width: 150px;
+}
+
+.comment-content {
+	padding: 4px 8px;
+	background: #f8fafc;
+	border-radius: 6px;
+	border-left: 3px solid #dbeafe;
+	font-size: 13px;
+	color: #4b5563;
+	cursor: help;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.comment-content:hover {
+	background: #f1f5f9;
+	white-space: normal;
+	overflow: visible;
+	z-index: 10;
+	position: relative;
+}
+
+.no-comment {
+	color: #9ca3af;
+	font-style: italic;
+}
+
+/* Упрощенные бейджи статусов */
+.verified-badge, .not-verified {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 500;
+	width: 30px;
+	text-align: center;
+}
+
+.verified-badge {
+	background: #10b981;
+	color: white;
+}
+
+.not-verified {
+	background: #f59e0b;
+	color: white;
+}
+
+/* Обновленный футер таблицы */
+.footer-stats {
+	display: flex;
+	justify-content: space-around;
+	font-size: 13px;
+	color: #6b7280;
+	padding: 10px;
+	background: #f9fafb;
+	border-radius: 8px;
+	margin-top: 15px;
+}
+
+.footer-stats span {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+/* Адаптивность для таблицы с комментариями */
+@media (max-width: 1024px) {
+	.comment {
+		max-width: 120px;
+		min-width: 100px;
+	}
+	
+	.comment-content {
+		font-size: 12px;
+	}
+}
+
+@media (max-width: 768px) {
+	.comment {
+		display: none; /* Скрываем на мобильных */
+	}
+	
+	.leaderboard-table th:nth-child(6),
+	.leaderboard-table td:nth-child(6) {
+		display: none;
+	}
+}

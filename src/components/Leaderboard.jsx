@@ -11,10 +11,6 @@ export default function Leaderboard({ times, user }) {
 		return km ? `${km.toFixed(1)} км` : '—'
 	}
 
-	function formatElevation(m) {
-		return m ? `${m} м` : '—'
-	}
-
 	return (
 		<div className='leaderboard-card'>
 			<h2>🏆 Таблица заездов</h2>
@@ -31,6 +27,7 @@ export default function Leaderboard({ times, user }) {
 								<th>Время</th>
 								<th>Лыжи</th>
 								<th>Статус</th>
+								<th>Комментарий</th>
 								<th>Трек</th>
 								<th>Дата</th>
 							</tr>
@@ -66,15 +63,26 @@ export default function Leaderboard({ times, user }) {
 												className='verified-badge'
 												title='Подтверждено GPX треком'
 											>
-												✅ Подтвержден
+												✅
 											</span>
 										) : (
 											<span
 												className='not-verified'
 												title='Нет подтверждающего трека'
 											>
-												⚠️ Не подтвержден
+												⚠️
 											</span>
+										)}
+									</td>
+									<td className='comment' title={time.comment || ''}>
+										{time.comment ? (
+											<div className='comment-content'>
+												{time.comment.length > 30
+													? time.comment.substring(0, 30) + '...'
+													: time.comment}
+											</div>
+										) : (
+											<span className='no-comment'>—</span>
 										)}
 									</td>
 									<td className='track'>
@@ -86,16 +94,9 @@ export default function Leaderboard({ times, user }) {
 												className='track-link'
 												title={`Дистанция: ${formatDistance(
 													time.track_distance
-												)}, Набор высоты: ${formatElevation(
-													time.track_elevation
 												)}`}
 											>
-												📊 Трек
-												{time.track_distance && (
-													<span className='track-stats'>
-														{formatDistance(time.track_distance)}
-													</span>
-												)}
+												📊
 											</a>
 										) : (
 											<span className='no-track'>—</span>
@@ -111,12 +112,12 @@ export default function Leaderboard({ times, user }) {
 				</div>
 			)}
 
-			<div className='verification-stats'>
-				<p>
-					📊 Подтвержденных заездов: {times.filter(t => t.verified).length} из{' '}
-					{times.length}
-				</p>
-				<p>📍 Треков загружено: {times.filter(t => t.gpx_track_url).length}</p>
+			<div className='table-footer'>
+				<div className='footer-stats'>
+					<span>Всего: {times.length} заездов</span>
+					<span>✅ Подтверждено: {times.filter(t => t.verified).length}</span>
+					<span>📝 С комментариями: {times.filter(t => t.comment).length}</span>
+				</div>
 			</div>
 		</div>
 	)
