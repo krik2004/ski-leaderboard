@@ -5,7 +5,19 @@ export default function Leaderboard({ times, user }) {
 	const [anonymousNumbers, setAnonymousNumbers] = useState({})
 	const [userVisibility, setUserVisibility] = useState('public')
 	const [skierProfiles, setSkierProfiles] = useState({})
+	// Определяем, мобильное ли устройство
+	const [isMobile, setIsMobile] = useState(false)
 
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth <= 768)
+		}
+
+		checkMobile()
+		window.addEventListener('resize', checkMobile)
+
+		return () => window.removeEventListener('resize', checkMobile)
+	}, [])
 	// Загружаем настройки видимости всех пользователей
 	useEffect(() => {
 		async function loadProfiles() {
@@ -136,13 +148,15 @@ export default function Leaderboard({ times, user }) {
 						<thead>
 							<tr>
 								<th>#</th>
-								<th>Лыжник</th>
+								<th>{isMobile ? 'Имя' : 'Лыжник'}</th>
 								<th>Время</th>
-								<th>Лыжи</th>
-								<th>Статус</th>
-								<th>Комментарий</th>
-								<th>Трек</th>
-								<th>Дата заезда</th>
+								<th>{isMobile ? 'Лыжи' : 'Модель лыж'}</th>
+								<th title='Статус подтверждения'>
+									{isMobile ? '✓' : 'Статус'}
+								</th>
+								<th title='Комментарий'>{isMobile ? '💬' : 'Комментарий'}</th>
+								<th title='GPX трек'>{isMobile ? '📊' : 'Трек'}</th>
+								<th>{isMobile ? 'Дата' : 'Дата заезда'}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -214,10 +228,21 @@ export default function Leaderboard({ times, user }) {
 												<span className='no-track'>—</span>
 											)}
 										</td>
-										<td className='date'>
+										<td className='date compact-date'>
 											{time.date
-												? new Date(time.date).toLocaleDateString('ru-RU')
-												: new Date(time.created_at).toLocaleDateString('ru-RU')}
+												? new Date(time.date).toLocaleDateString('ru-RU', {
+														day: '2-digit',
+														month: '2-digit',
+														year: '2-digit',
+												  })
+												: new Date(time.created_at).toLocaleDateString(
+														'ru-RU',
+														{
+															day: '2-digit',
+															month: '2-digit',
+															year: '2-digit',
+														}
+												  )}
 										</td>
 									</tr>
 								)
@@ -238,7 +263,6 @@ export default function Leaderboard({ times, user }) {
 					</span>
 					{userVisibility === 'private' && <span>🔒 Режим: только свои</span>}
 				</div>
-				
 			</div>
 		</div>
 	)
