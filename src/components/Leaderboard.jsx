@@ -120,6 +120,7 @@ export default function Leaderboard({ times, user }) {
 	return (
 		<div className='leaderboard-card'>
 			<h4>🏆 Таблица заездов ЛБК Ангарский (малый, освещенный круг 2,5км)</h4>
+			<h4>🏆 Таблица заездов ЛБК Ангарский (малый, освещенный круг 2,5км)</h4>
 
 			{/* Информация о текущем режиме просмотра */}
 			{user && userVisibility === 'private' && (
@@ -238,6 +239,7 @@ export default function Leaderboard({ times, user }) {
 					</span>
 					{userVisibility === 'private' && <span>🔒 Режим: только свои</span>}
 				</div>
+				
 			</div>
 		</div>
 	)
