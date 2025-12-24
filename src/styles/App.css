@@ -1326,3 +1326,335 @@ input, textarea, button {
 		min-width: 70px !important;
 	}
 }
+
+
+/* Компактный хедер для мобильных */
+@media (max-width: 768px) {
+	.header {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 10px;
+		align-items: center;
+		padding: 8px 0;
+		margin-bottom: 10px;
+	}
+	
+	.header-left {
+		grid-column: 1;
+		display: flex;
+		align-items: center;
+	}
+	
+	.header-right {
+		grid-column: 2;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+	
+	.title {
+		font-size: 1.4rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 200px;
+	}
+	
+	.profile-tab-btn {
+		width: 36px;
+		height: 36px;
+		font-size: 16px;
+	}
+	
+	.danger-btn.compact {
+		padding: 6px 10px;
+		font-size: 12px;
+		min-width: 60px;
+	}
+}
+
+/* На очень маленьких экранах */
+@media (max-width: 480px) {
+	.header {
+		gap: 6px;
+	}
+	
+	.title {
+		font-size: 1.2rem;
+		max-width: 150px;
+	}
+	
+	.profile-tab-btn {
+		width: 32px;
+		height: 32px;
+		font-size: 14px;
+	}
+	
+	.danger-btn.compact {
+		padding: 5px 8px;
+		font-size: 11px;
+		min-width: 55px;
+	}
+}
+
+
+/* Компактная таблица - уменьшаем все отступы */
+.leaderboard-table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0 2px; /* Уменьшаем вертикальные отступы между строками */
+}
+
+.leaderboard-table th {
+	padding: 8px 4px !important;
+	font-size: 12px;
+	font-weight: 600;
+	background: #f8fafc;
+	border-bottom: 2px solid #e5e7eb;
+	text-align: left;
+	white-space: nowrap;
+}
+
+.leaderboard-table td {
+	padding: 6px 4px !important;
+	border-bottom: 1px solid #f3f4f6;
+	vertical-align: middle;
+	height: 36px; /* Фиксированная высота строк */
+}
+
+/* Уменьшаем горизонтальные отступы в ячейках */
+.leaderboard-table th:nth-child(1),
+.leaderboard-table td:nth-child(1) {
+	padding-left: 8px !important;
+	width: 30px; /* № */
+}
+
+.leaderboard-table th:nth-child(2),
+.leaderboard-table td:nth-child(2) {
+	min-width: 100px;
+	max-width: 120px;
+}
+
+.leaderboard-table th:nth-child(3),
+.leaderboard-table td:nth-child(3) {
+	width: 70px; /* Время */
+}
+
+.leaderboard-table th:nth-child(4),
+.leaderboard-table td:nth-child(4) {
+	min-width: 80px;
+	max-width: 100px;
+}
+
+.leaderboard-table th:nth-child(5),
+.leaderboard-table td:nth-child(5) {
+	width: 40px; /* Статус */
+}
+
+.leaderboard-table th:nth-child(6),
+.leaderboard-table td:nth-child(6) {
+	min-width: 80px;
+	max-width: 120px;
+}
+
+.leaderboard-table th:nth-child(7),
+.leaderboard-table td:nth-child(7) {
+	width: 40px; /* Трек */
+}
+
+.leaderboard-table th:nth-child(8),
+.leaderboard-table td:nth-child(8) {
+	width: 70px; /* Дата */
+	padding-right: 8px !important;
+}
+
+/* Убираем лишние отступы внутри ячеек */
+.skier-info {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.skier-info strong {
+	font-size: 13px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100px;
+}
+
+/* Компактные бейджи без лишних отступов */
+.time-badge {
+	padding: 3px 6px !important;
+	font-size: 12px !important;
+	display: inline-block;
+	min-width: 50px;
+	text-align: center;
+	line-height: 1.2;
+}
+
+.model-badge {
+	padding: 2px 5px !important;
+	font-size: 10px !important;
+	line-height: 1.2;
+	display: inline-block;
+	max-width: 90px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Компактные статусы */
+.verified-badge, .not-verified {
+	width: 24px !important;
+	height: 24px !important;
+	padding: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	font-size: 12px !important;
+	line-height: 1;
+}
+
+/* Компактные комментарии */
+.comment-content {
+	padding: 2px 4px !important;
+	font-size: 11px !important;
+	line-height: 1.2;
+	max-height: 32px;
+	overflow: hidden;
+}
+
+/* Компактная дата */
+.compact-date {
+	font-size: 11px !important;
+	white-space: nowrap;
+}
+
+/* Еще более компактно на мобильных */
+@media (max-width: 768px) {
+	.leaderboard-table {
+		border-spacing: 0 1px;
+	}
+	
+	.leaderboard-table th,
+	.leaderboard-table td {
+		padding: 4px 2px !important;
+		height: 32px;
+	}
+	
+	.leaderboard-table th:nth-child(1),
+	.leaderboard-table td:nth-child(1) {
+		padding-left: 6px !important;
+		width: 25px;
+	}
+	
+	.leaderboard-table th:nth-child(2),
+	.leaderboard-table td:nth-child(2) {
+		min-width: 80px;
+		max-width: 100px;
+	}
+	
+	.leaderboard-table th:nth-child(3),
+	.leaderboard-table td:nth-child(3) {
+		width: 60px;
+	}
+	
+	.skier-info strong {
+		font-size: 12px;
+		max-width: 80px;
+	}
+	
+	.time-badge {
+		min-width: 45px;
+		padding: 2px 4px !important;
+		font-size: 11px !important;
+	}
+	
+	.model-badge {
+		max-width: 70px;
+		font-size: 9px !important;
+		padding: 1px 3px !important;
+	}
+	
+	.compact-date {
+		font-size: 10px !important;
+	}
+}
+
+/* Для горизонтальной ориентации */
+@media (max-width: 768px) and (orientation: landscape) {
+	.leaderboard-table th,
+	.leaderboard-table td {
+		padding: 3px 2px !important;
+	}
+	
+	.leaderboard-table {
+		font-size: 11px;
+	}
+}
+
+/* Контейнер для таблицы с горизонтальным скроллом */
+.table-container {
+	width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	border-radius: 8px;
+	margin: 0 -10px;
+	padding: 0 10px;
+}
+
+/* Минимальная ширина таблицы */
+.leaderboard-table {
+	min-width: 700px; /* Минимальная ширина чтобы все помещалось */
+}
+
+/* На десктопе убираем горизонтальный скролл */
+@media (min-width: 1024px) {
+	.table-container {
+		overflow-x: visible;
+		margin: 0;
+		padding: 0;
+	}
+	
+	.leaderboard-table {
+		min-width: auto;
+		width: 100%;
+	}
+}
+
+
+/* Компактные карточки */
+.main-card, .leaderboard-card, .add-form, 
+.profile-card, .about-card {
+	padding: 15px;
+	margin-bottom: 12px;
+	border-radius: 8px;
+}
+
+/* Уменьшаем отступы внутри форм */
+.form-row {
+	margin-bottom: 8px;
+	gap: 8px;
+}
+
+.input-group {
+	margin-bottom: 8px;
+}
+
+.input-group label {
+	margin-bottom: 4px;
+	font-size: 12px;
+}
+
+/* Компактные вкладки */
+.tabs {
+	margin-bottom: 12px;
+	padding: 3px;
+}
+
+.tab {
+	padding: 8px 6px;
+	font-size: 13px;
+}

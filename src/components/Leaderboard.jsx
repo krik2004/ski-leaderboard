@@ -143,7 +143,7 @@ export default function Leaderboard({ times, user }) {
 			{filteredTimes.length === 0 ? (
 				<p className='no-data'>Пока нет заездов. Будьте первым!</p>
 			) : (
-				<div className='table-responsive'>
+				<div className='table-container'>
 					<table className='leaderboard-table'>
 						<thead>
 							<tr>
