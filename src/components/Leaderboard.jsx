@@ -13,7 +13,7 @@ export default function Leaderboard({ times, user }) {
 
 	return (
 		<div className='leaderboard-card'>
-			<h2>🏆 Таблица заездов</h2>
+			<h2>🏆 Таблица заездов ЛБК Ангарский </h2>
 
 			{times.length === 0 ? (
 				<p className='no-data'>Пока нет заездов. Будьте первым!</p>
