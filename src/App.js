@@ -77,16 +77,6 @@ function App() {
 					</button>
 				</div>
 			</div>
-			<script
-				src='//yastatic.net/weather/i/yandex.weather-medium.js'
-				data-forecast='59.9310!30.3609'
-			></script>
-			.{message && <div className='message-box success'>{message}</div>}
-			<script
-				src='//yastatic.net/weather/i/yandex.weather-medium.js'
-				data-forecast='59.9310!30.3609'
-			></script>
-			.
 			<div className='tabs'>
 				<button
 					className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
