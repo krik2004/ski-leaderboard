@@ -1,21 +1,134 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 export default function Leaderboard({ times, user }) {
+	const [anonymousNumbers, setAnonymousNumbers] = useState({})
+	const [userVisibility, setUserVisibility] = useState('public')
+	const [skierProfiles, setSkierProfiles] = useState({})
+
+	// Загружаем настройки видимости всех пользователей
+	useEffect(() => {
+		async function loadProfiles() {
+			if (times.length === 0) return
+
+			// Собираем все ID пользователей из заездов
+			const userIds = [...new Set(times.map(time => time.user_id))]
+
+			const { data: profiles } = await supabase
+				.from('profiles')
+				.select('id, username, visibility_preference')
+				.in('id', userIds)
+
+			if (profiles) {
+				// Создаем объект для быстрого доступа
+				const profilesMap = {}
+				profiles.forEach(profile => {
+					profilesMap[profile.id] = profile
+				})
+				setSkierProfiles(profilesMap)
+
+				// Генерируем номера для анонимных пользователей
+				const anonymousMap = {}
+				let counter = 1
+
+				// Сортируем анонимных пользователей по времени первого заезда
+				const anonymousUsers = profiles
+					.filter(p => p.visibility_preference === 'anonymous')
+					.map(p => {
+						const userTimes = times.filter(t => t.user_id === p.id)
+						const bestTime =
+							userTimes.length > 0
+								? Math.min(...userTimes.map(t => t.time_seconds))
+								: Infinity
+						return { id: p.id, bestTime }
+					})
+					.sort((a, b) => a.bestTime - b.bestTime)
+
+				// Присваиваем номера в порядке лучшего времени
+				anonymousUsers.forEach((user, index) => {
+					anonymousMap[user.id] = index + 1
+				})
+
+				setAnonymousNumbers(anonymousMap)
+			}
+		}
+
+		loadProfiles()
+	}, [times])
+
+	// Загружаем настройки текущего пользователя
+	useEffect(() => {
+		async function loadCurrentUserVisibility() {
+			if (user) {
+				const { data } = await supabase
+					.from('profiles')
+					.select('visibility_preference')
+					.eq('id', user.id)
+					.single()
+
+				if (data) {
+					setUserVisibility(data.visibility_preference || 'public')
+				}
+			}
+		}
+		loadCurrentUserVisibility()
+	}, [user])
+
 	function formatTime(seconds) {
 		const mins = Math.floor(seconds / 60)
 		const secs = seconds % 60
 		return `${mins}:${secs.toString().padStart(2, '0')}`
 	}
 
-	function formatDistance(km) {
-		return km ? `${km.toFixed(1)} км` : '—'
+	// Функция для получения отображаемого имени
+	function getDisplayName(time) {
+		const profile = skierProfiles[time.user_id]
+		const isCurrentUser = user && time.user_id === user.id
+
+		// Если это текущий пользователь и у него приватный режим
+		if (isCurrentUser && userVisibility === 'private') {
+			return 'Вы'
+		}
+
+		// Если пользователь анонимный
+		if (profile?.visibility_preference === 'anonymous') {
+			const number = anonymousNumbers[time.user_id] || '?'
+			return `Лыжник №${number}`
+		}
+
+		// Возвращаем имя из профиля или из заезда
+		return profile?.username || time.user_name || 'Гость'
 	}
+
+	// Фильтруем заезды в зависимости от настроек текущего пользователя
+	const filteredTimes = times.filter(time => {
+		if (!user) return true // Неаутентифицированные видят все
+
+		const profile = skierProfiles[time.user_id]
+		const isCurrentUser = time.user_id === user.id
+
+		// Если это текущий пользователь - всегда показываем
+		if (isCurrentUser) return true
+
+		// Если пользователь хочет видеть только себя - скрываем других
+		if (userVisibility === 'private') return false
+
+		// Показываем всех остальных
+		return true
+	})
 
 	return (
 		<div className='leaderboard-card'>
-			<h2>🏆 Таблица заездов</h2>
+			<h4>🏆 Таблица заездов ЛБК Ангарский (малый, освещенный круг 2,5км)</h4>
 
-			{times.length === 0 ? (
+			{/* Информация о текущем режиме просмотра */}
+			{user && userVisibility === 'private' && (
+				<div className='view-mode-info'>
+					🔒 Режим просмотра: <strong>Только свои результаты</strong>
+				</div>
+			)}
+
+			{filteredTimes.length === 0 ? (
 				<p className='no-data'>Пока нет заездов. Будьте первым!</p>
 			) : (
 				<div className='table-responsive'>
@@ -29,84 +142,86 @@ export default function Leaderboard({ times, user }) {
 								<th>Статус</th>
 								<th>Комментарий</th>
 								<th>Трек</th>
-								<th>Дата</th>
+								<th>Дата заезда</th>
 							</tr>
 						</thead>
 						<tbody>
-							{times.map((time, index) => (
-								<tr
-									key={time.id}
-									className={time.user_id === user?.id ? 'my-time' : ''}
-								>
-									<td className='position'>{index + 1}</td>
-									<td className='skier'>
-										<strong>{time.user_name || 'Гость'}</strong>
-										{time.user_id === user?.id && (
-											<span className='you-badge'>Вы</span>
-										)}
-									</td>
-									<td className='time'>
-										<span className='time-badge'>
-											{formatTime(time.time_seconds)}
-										</span>
-									</td>
-									<td className='ski-model'>
-										{time.ski_model ? (
-											<span className='model-badge'>{time.ski_model}</span>
-										) : (
-											<span className='no-model'>—</span>
-										)}
-									</td>
-									<td className='verification'>
-										{time.verified ? (
-											<span
-												className='verified-badge'
-												title='Подтверждено GPX треком'
-											>
-												✅
-											</span>
-										) : (
-											<span
-												className='not-verified'
-												title='Нет подтверждающего трека'
-											>
-												⚠️
-											</span>
-										)}
-									</td>
-									<td className='comment' title={time.comment || ''}>
-										{time.comment ? (
-											<div className='comment-content'>
-												{time.comment.length > 30
-													? time.comment.substring(0, 30) + '...'
-													: time.comment}
+							{filteredTimes.map((time, index) => {
+								const isCurrentUser = user && time.user_id === user.id
+								const displayName = getDisplayName(time)
+
+								return (
+									<tr key={time.id} className={isCurrentUser ? 'my-time' : ''}>
+										<td className='position'>{index + 1}</td>
+										<td className='skier'>
+											<div className='skier-info'>
+												<strong>{displayName}</strong>
+												{isCurrentUser && <span className='you-label'>вы</span>}
 											</div>
-										) : (
-											<span className='no-comment'>—</span>
-										)}
-									</td>
-									<td className='track'>
-										{time.gpx_track_url ? (
-											<a
-												href={time.gpx_track_url}
-												target='_blank'
-												rel='noopener noreferrer'
-												className='track-link'
-												title={`Дистанция: ${formatDistance(
-													time.track_distance
-												)}`}
-											>
-												📊
-											</a>
-										) : (
-											<span className='no-track'>—</span>
-										)}
-									</td>
-									<td className='date'>
-										{new Date(time.date).toLocaleDateString('ru-RU')}
-									</td>
-								</tr>
-							))}
+										</td>
+										<td className='time'>
+											<span className='time-badge'>
+												{formatTime(time.time_seconds)}
+											</span>
+										</td>
+										<td className='ski-model'>
+											{time.ski_model ? (
+												<span className='model-badge'>{time.ski_model}</span>
+											) : (
+												<span className='no-model'>—</span>
+											)}
+										</td>
+										<td className='verification'>
+											{time.verified ? (
+												<span
+													className='verified-badge'
+													title='Подтверждено GPX треком'
+												>
+													✅
+												</span>
+											) : (
+												<span
+													className='not-verified'
+													title='Нет подтверждающего трека'
+												>
+													⚠️
+												</span>
+											)}
+										</td>
+										<td className='comment' title={time.comment || ''}>
+											{time.comment ? (
+												<div className='comment-content'>
+													{time.comment.length > 30
+														? time.comment.substring(0, 30) + '...'
+														: time.comment}
+												</div>
+											) : (
+												<span className='no-comment'>—</span>
+											)}
+										</td>
+										<td className='track'>
+											{time.gpx_track_url ? (
+												<a
+													href={time.gpx_track_url}
+													target='_blank'
+													rel='noopener noreferrer'
+													className='track-link'
+													title='Просмотреть трек'
+												>
+													📊
+												</a>
+											) : (
+												<span className='no-track'>—</span>
+											)}
+										</td>
+										<td className='date'>
+											{time.date
+												? new Date(time.date).toLocaleDateString('ru-RU')
+												: new Date(time.created_at).toLocaleDateString('ru-RU')}
+										</td>
+									</tr>
+								)
+							})}
 						</tbody>
 					</table>
 				</div>
@@ -114,9 +229,14 @@ export default function Leaderboard({ times, user }) {
 
 			<div className='table-footer'>
 				<div className='footer-stats'>
-					<span>Всего: {times.length} заездов</span>
-					<span>✅ Подтверждено: {times.filter(t => t.verified).length}</span>
-					<span>📝 С комментариями: {times.filter(t => t.comment).length}</span>
+					<span>Всего: {filteredTimes.length} заездов</span>
+					<span>
+						✅ Подтверждено: {filteredTimes.filter(t => t.verified).length}
+					</span>
+					<span>
+						👥 Участников: {new Set(filteredTimes.map(t => t.user_id)).size}
+					</span>
+					{userVisibility === 'private' && <span>🔒 Режим: только свои</span>}
 				</div>
 			</div>
 		</div>

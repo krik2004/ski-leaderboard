@@ -2,60 +2,85 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
 import Profile from './components/Profile'
-import Leaderboard from './components/Leaderboard'
 import AddTimeForm from './components/AddTimeForm'
+import Leaderboard from './components/Leaderboard'
+import About from './components/About'
 import './styles/App.css'
 
 function App() {
 	const [user, setUser] = useState(null)
 	const [times, setTimes] = useState([])
-	const [loading, setLoading] = useState(false)
-	const [message, setMessage] = useState('')
-	const [activeTab, setActiveTab] = useState('leaderboard')
+	const [loading, setLoading] = useState(true)
+	const [activeTab, setActiveTab] = useState('leaderboard') // 'leaderboard', 'add', 'profile', 'about'
 
 	useEffect(() => {
-		checkUser()
+		// Проверяем аутентификацию
+		supabase.auth.getSession().then(({ data: { session } }) => {
+			setUser(session?.user || null)
+			setLoading(false)
+		})
+
+		// Слушаем изменения аутентификации
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange((_event, session) => {
 			setUser(session?.user || null)
-			if (session) loadTimes()
 		})
+
 		return () => subscription.unsubscribe()
 	}, [])
 
-	async function checkUser() {
-		const {
-			data: { session },
-		} = await supabase.auth.getSession()
-		setUser(session?.user || null)
-		if (session) loadTimes()
-	}
+	useEffect(() => {
+		if (user) {
+			fetchTimes()
+		}
+	}, [user])
 
-	async function loadTimes() {
-		setLoading(true)
+	async function fetchTimes() {
 		try {
-			const { data, error } = await supabase
+			let query = supabase
 				.from('lap_times')
 				.select('*')
 				.order('time_seconds', { ascending: true })
-				.limit(20)
+
+			const { data, error } = await query
 
 			if (error) throw error
-			setTimes(data || [])
+
+			// Фильтруем результаты в зависимости от настроек пользователя
+			if (user) {
+				const { data: profile } = await supabase
+					.from('profiles')
+					.select('visibility_preference')
+					.eq('id', user.id)
+					.single()
+
+				if (profile?.visibility_preference === 'private') {
+					// Показываем только свои результаты
+					setTimes(data.filter(time => time.user_id === user.id))
+				} else {
+					// Показываем все результаты
+					setTimes(data)
+				}
+			} else {
+				setTimes(data)
+			}
 		} catch (error) {
-			console.error('Ошибка загрузки:', error)
-			setMessage('Ошибка загрузки данных')
-		} finally {
-			setLoading(false)
+			console.error('Ошибка загрузки заездов:', error)
 		}
 	}
 
 	async function handleLogout() {
 		await supabase.auth.signOut()
 		setUser(null)
-		setTimes([])
-		setMessage('Вы вышли из системы')
+	}
+
+	if (loading) {
+		return (
+			<div className='container'>
+				<div className='loading'>Загрузка...</div>
+			</div>
+		)
 	}
 
 	if (!user) {
@@ -68,7 +93,7 @@ function App() {
 
 	return (
 		<div className='container'>
-			<div className='header'>
+			<header className='header'>
 				<h1 className='title'>🎿 Лыжный Рейтинг</h1>
 				<div className='user-info'>
 					<span className='user-email'>{user.email}</span>
@@ -76,39 +101,51 @@ function App() {
 						Выйти
 					</button>
 				</div>
-			</div>
-			<script
-				src='//yastatic.net/weather/i/yandex.weather-medium.js'
-				data-forecast='59.9310!30.3609'
-			></script>
-			.{message && <div className='message-box success'>{message}</div>}
-			<script
-				src='//yastatic.net/weather/i/yandex.weather-medium.js'
-				data-forecast='59.9310!30.3609'
-			></script>
-			.
-			<div className='tabs'>
-				<button
-					className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
-					onClick={() => setActiveTab('leaderboard')}
-				>
-					🏆 Таблица
-				</button>
-				<button
-					className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
-					onClick={() => setActiveTab('profile')}
-				>
-					👤 Профиль
-				</button>
-			</div>
-			{activeTab === 'leaderboard' ? (
-				<>
+			</header>
+
+			<main className='main-card'>
+				<div className='tabs'>
+					<button
+						className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
+						onClick={() => setActiveTab('leaderboard')}
+					>
+						🏆 Таблица
+					</button>
+					<button
+						className={`tab ${activeTab === 'add' ? 'active' : ''}`}
+						onClick={() => setActiveTab('add')}
+					>
+						➕ Добавить заезд
+					</button>
+					<button
+						className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
+						onClick={() => setActiveTab('profile')}
+					>
+						👤 Профиль
+					</button>
+					<button
+						className={`tab ${activeTab === 'about' ? 'active' : ''}`}
+						onClick={() => setActiveTab('about')}
+					>
+						ℹ️ О проекте
+					</button>
+				</div>
+
+				{activeTab === 'leaderboard' && (
 					<Leaderboard times={times} user={user} />
-					<AddTimeForm user={user} onTimeAdded={loadTimes} />
-				</>
-			) : (
-				<Profile user={user} onUpdate={loadTimes} />
-			)}
+				)}
+				{activeTab === 'add' && (
+					<AddTimeForm user={user} onTimeAdded={fetchTimes} />
+				)}
+				{activeTab === 'profile' && (
+					<Profile user={user} onUpdate={fetchTimes} />
+				)}
+				{activeTab === 'about' && <About />}
+			</main>
+
+			<footer className='footer'>
+				<p> 2025 Лыжный Рейтинг Друзей</p>
+			</footer>
 		</div>
 	)
 }

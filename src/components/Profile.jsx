@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 export default function Profile({ user, onUpdate }) {
 	const [username, setUsername] = useState('')
 	const [skiModel, setSkiModel] = useState('')
+	const [visibility, setVisibility] = useState('public') // 'private', 'anonymous', 'public'
 	const [loading, setLoading] = useState(false)
 	const [message, setMessage] = useState('')
 
@@ -14,13 +15,14 @@ export default function Profile({ user, onUpdate }) {
 	async function loadProfile() {
 		const { data } = await supabase
 			.from('profiles')
-			.select('username, ski_model')
+			.select('username, ski_model, visibility_preference')
 			.eq('id', user.id)
 			.single()
 
 		if (data) {
 			setUsername(data.username || '')
 			setSkiModel(data.ski_model || '')
+			setVisibility(data.visibility_preference || 'public')
 		}
 	}
 
@@ -39,11 +41,12 @@ export default function Profile({ user, onUpdate }) {
 
 			const userId = session.user.id
 
-			// Обновляем профиль с моделью лыж
+			// Обновляем профиль с новой настройкой
 			const { error: profileError } = await supabase.from('profiles').upsert({
 				id: userId,
 				username: username.trim(),
 				ski_model: skiModel.trim() || null,
+				visibility_preference: visibility,
 				updated_at: new Date().toISOString(),
 			})
 
@@ -74,12 +77,12 @@ export default function Profile({ user, onUpdate }) {
 
 	return (
 		<div className='profile-card'>
-			<h2>👤 Мой профиль</h2>
+			<h2>Мой профиль</h2>
 			{message && <div className='message-box success'>{message}</div>}
 
 			<form onSubmit={handleSave} className='profile-form'>
 				<div className='form-group'>
-					<label>Имя в таблице *</label>
+					<label>Имя в таблице</label>
 					<input
 						type='text'
 						value={username}
@@ -106,13 +109,50 @@ export default function Profile({ user, onUpdate }) {
 					<label>Email</label>
 					<input type='text' value={user.email} disabled className='disabled' />
 				</div>
-				<div className='profile-info'>
-					<h4>📝 Зачем указывать модель лыж?</h4>
-					<ul>
-						<li>Сравнивать результаты на одинаковых лыжах</li>
-						<li>Видеть какие лыжи быстрее на вашей трассе</li>
-						<li>Делиться опытом</li>
-					</ul>
+
+				{/* Новая секция: Настройки видимости */}
+				<div className='form-group'>
+					<label>Настройки видимости</label>
+					<div className='visibility-options'>
+
+						<div className='visibility-option'>
+							<label className='radio-label'>
+								<input
+									type='radio'
+									name='visibility'
+									value='anonymous'
+									checked={visibility === 'anonymous'}
+									onChange={e => setVisibility(e.target.value)}
+									disabled={loading}
+								/>
+								<span className='radio-custom'></span>
+								<span className='option-title'>Анонимное участие</span>
+							</label>
+							<div className='option-description'>
+								• В рейтинге как "Лыжник №Х"
+								<br />• Вижу своё место
+							</div>
+						</div>
+
+						<div className='visibility-option'>
+							<label className='radio-label'>
+								<input
+									type='radio'
+									name='visibility'
+									value='public'
+									checked={visibility === 'public'}
+									onChange={e => setVisibility(e.target.value)}
+									disabled={loading}
+								/>
+								<span className='radio-custom'></span>
+								<span className='option-title'>Публичное участие</span>
+							</label>
+							<div className='option-description'>
+								• Имя в общем рейтинге
+								<br />• Полная конкуренция
+							</div>
+						</div>
+					</div>
 				</div>
 				<button
 					type='submit'

@@ -2,13 +2,21 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function AddTimeForm({ user, onTimeAdded }) {
-	const [timeSeconds, setTimeSeconds] = useState('')
+	const [minutes, setMinutes] = useState('')
+	const [seconds, setSeconds] = useState('')
+	const [selectedDate, setSelectedDate] = useState('')
 	const [comment, setComment] = useState('')
 	const [skiModel, setSkiModel] = useState('')
 	const [gpxFile, setGpxFile] = useState(null)
 	const [isUploading, setIsUploading] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [message, setMessage] = useState('')
+
+	// Устанавливаем текущую дату по умолчанию
+	useEffect(() => {
+		const today = new Date().toISOString().split('T')[0]
+		setSelectedDate(today)
+	}, [])
 
 	const handleFileChange = e => {
 		const file = e.target.files[0]
@@ -30,26 +38,17 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 				'_'
 			)}`
 
-			// Загружаем файл в Supabase Storage
 			const { data, error } = await supabase.storage
 				.from('gpx-tracks')
 				.upload(fileName, file)
 
 			if (error) throw error
 
-			// Получаем публичную ссылку
 			const {
 				data: { publicUrl },
 			} = supabase.storage.from('gpx-tracks').getPublicUrl(fileName)
 
-			// Парсим GPX для получения дистанции и высоты
-			const gpxData = await parseGpxFile(file)
-
-			return {
-				url: publicUrl,
-				distance: gpxData.distance,
-				elevation: gpxData.elevation,
-			}
+			return { url: publicUrl }
 		} catch (error) {
 			console.error('Ошибка загрузки GPX:', error)
 			return null
@@ -58,36 +57,20 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 		}
 	}
 
-	async function parseGpxFile(file) {
-		// Простой парсинг GPX для примера
-		return new Promise(resolve => {
-			const reader = new FileReader()
-			reader.onload = e => {
-				const text = e.target.result
-				const parser = new DOMParser()
-				const xml = parser.parseFromString(text, 'text/xml')
-
-				// Простая логика для примера
-				const trackPoints = xml.getElementsByTagName('trkpt')
-				let distance = 0
-				let elevation = 0
-
-				if (trackPoints.length > 0) {
-					// Для примера: предполагаем стандартную дистанцию лыжной трассы
-					distance = 5.0 // км
-					elevation = 50 // метров
-				}
-
-				resolve({ distance, elevation })
-			}
-			reader.readAsText(file)
-		})
-	}
-
 	async function handleSubmit(e) {
 		e.preventDefault()
-		if (!timeSeconds || timeSeconds <= 0) {
-			setMessage('Введите время в секундах')
+
+		// Проверяем что заполнены минуты и секунды
+		if (!minutes && !seconds) {
+			setMessage('Введите время заезда')
+			return
+		}
+
+		// Конвертируем в секунды
+		const totalSeconds = parseInt(minutes || 0) * 60 + parseInt(seconds || 0)
+
+		if (totalSeconds <= 0) {
+			setMessage('Время должно быть больше 0 секунд')
 			return
 		}
 
@@ -100,16 +83,19 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 				gpxData = await uploadGpxFile(gpxFile)
 			}
 
+			// Формируем полную дату с временем (если нужно, можно добавить выбор времени)
+			const dateTime = selectedDate
+				? new Date(selectedDate).toISOString()
+				: new Date().toISOString()
+
 			const { error } = await supabase.from('lap_times').insert({
 				user_id: user.id,
-				time_seconds: parseInt(timeSeconds),
+				time_seconds: totalSeconds,
 				comment: comment || null,
 				ski_model: skiModel.trim() || null,
 				gpx_track_url: gpxData?.url || null,
-				verified: !!gpxData, // Подтвержден если есть GPX
-				track_distance: gpxData?.distance || null,
-				track_elevation: gpxData?.elevation || null,
-				date: new Date().toISOString(),
+				verified: !!gpxData,
+				date: dateTime,
 				user_name: user.email.split('@')[0],
 			})
 
@@ -118,11 +104,17 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 			setMessage(
 				gpxData ? '✅ Заезд добавлен с подтверждением!' : '✅ Заезд добавлен!'
 			)
-			setTimeSeconds('')
+
+			// Сброс полей формы
+			setMinutes('')
+			setSeconds('')
 			setComment('')
 			setSkiModel('')
 			setGpxFile(null)
+			const today = new Date().toISOString().split('T')[0]
+			setSelectedDate(today)
 			document.getElementById('gpx-upload').value = ''
+
 			onTimeAdded()
 		} catch (error) {
 			setMessage('❌ Ошибка: ' + error.message)
@@ -138,30 +130,66 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 
 			<form onSubmit={handleSubmit}>
 				<div className='form-row'>
+					{/* Поле для выбора даты */}
 					<div className='input-group'>
-						<label>Время (секунды) *</label>
+						<label>Дата заезда</label>
 						<input
-							type='number'
-							placeholder='Например: 120'
-							value={timeSeconds}
-							onChange={e => setTimeSeconds(e.target.value)}
-							min='1'
+							type='date'
+							value={selectedDate}
+							onChange={e => setSelectedDate(e.target.value)}
+							max={new Date().toISOString().split('T')[0]}
 							required
 							disabled={loading || isUploading}
 						/>
 					</div>
 
+					{/* Поля для времени */}
 					<div className='input-group'>
-						<label>Модель лыж</label>
+						<label>Минуты</label>
 						<input
-							type='text'
-							value={skiModel}
-							onChange={e => setSkiModel(e.target.value)}
-							placeholder='Модель лыж'
+							type='number'
+							placeholder='0'
+							value={minutes}
+							onChange={e => {
+								const value = e.target.value
+								if (
+									value === '' ||
+									(parseInt(value) >= 0 && parseInt(value) <= 59)
+								) {
+									setMinutes(value)
+								}
+							}}
+							min='0'
+							max='59'
 							disabled={loading || isUploading}
+							className='time-input'
+						/>
+					</div>
+
+					<div className='input-group'>
+						<label>Секунды</label>
+						<input
+							type='number'
+							placeholder='0'
+							value={seconds}
+							onChange={e => {
+								const value = e.target.value
+								if (
+									value === '' ||
+									(parseInt(value) >= 0 && parseInt(value) <= 59)
+								) {
+									setSeconds(value)
+								}
+							}}
+							min='0'
+							max='59'
+							disabled={loading || isUploading}
+							className='time-input'
 						/>
 					</div>
 				</div>
+
+				
 
 				<div className='form-row'>
 					<div className='input-group'>
@@ -214,7 +242,7 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 				<button
 					type='submit'
 					className='success-btn'
-					disabled={loading || isUploading}
+					disabled={loading || isUploading || (!minutes && !seconds)}
 				>
 					{isUploading
 						? '📤 Загрузка трека...'
@@ -223,13 +251,13 @@ export default function AddTimeForm({ user, onTimeAdded }) {
 						: '🎿 Добавить заезд'}
 				</button>
 
-				<div className='verification-info'>
-					{gpxFile && (
+				{gpxFile && (
+					<div className='verification-info'>
 						<div className='verification-badge'>
 							✅ Этот заезд будет отмечен как "Подтвержденный"
 						</div>
-					)}
-				</div>
+					</div>
+				)}
 			</form>
 		</div>
 	)
