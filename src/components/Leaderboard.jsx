@@ -116,8 +116,8 @@ export default function Leaderboard({ times, user }) {
 				<div className='footer-stats'>
 					<span>Всего: {times.length} заездов</span>
 					<span>✅ Подтверждено: {times.filter(t => t.verified).length}</span>
-					<span>📝 С комментариями: {times.filter(t => t.comment).length}</span>
 				</div>
+					<span>📝 Для обратной связи и предложений Telegram: @titov_films</span>
 			</div>
 		</div>
 	)
