@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 export default function Profile({ user, onUpdate }) {
 	const [username, setUsername] = useState('')
 	const [skiModel, setSkiModel] = useState('')
-	const [visibility, setVisibility] = useState('public') // 'private', 'anonymous', 'public'
+	const [visibility, setVisibility] = useState('public') // 'anonymous', 'public'
 	const [loading, setLoading] = useState(false)
 	const [message, setMessage] = useState('')
 
@@ -41,7 +41,7 @@ export default function Profile({ user, onUpdate }) {
 
 			const userId = session.user.id
 
-			// Обновляем профиль с новой настройкой
+			// Обновляем профиль
 			const { error: profileError } = await supabase.from('profiles').upsert({
 				id: userId,
 				username: username.trim(),
@@ -51,19 +51,6 @@ export default function Profile({ user, onUpdate }) {
 			})
 
 			if (profileError) throw profileError
-
-			// Обновляем ВСЕ заезды пользователя
-			const { error: timesError } = await supabase
-				.from('lap_times')
-				.update({
-					user_name: username.trim(),
-					ski_model: skiModel.trim() || null,
-				})
-				.eq('user_id', userId)
-
-			if (timesError) {
-				console.log('Ошибка обновления заездов (не критично):', timesError)
-			}
 
 			setMessage('✅ Профиль обновлен!')
 			onUpdate?.()
@@ -81,39 +68,67 @@ export default function Profile({ user, onUpdate }) {
 			{message && <div className='message-box success'>{message}</div>}
 
 			<form onSubmit={handleSave} className='profile-form'>
-				<div className='form-group'>
-					<label>Имя в таблице</label>
-					<input
-						type='text'
-						value={username}
-						onChange={e => setUsername(e.target.value)}
-						placeholder='Ваше имя'
-						minLength='2'
-						required
-						disabled={loading}
-					/>
+				{/* Два поля в одну строку */}
+				<div className='form-row compact-profile'>
+					<div className='input-group'>
+						<label>Имя в таблице</label>
+						<input
+							type='text'
+							value={username}
+							onChange={e => setUsername(e.target.value)}
+							placeholder='Ваше имя'
+							minLength='2'
+							required
+							disabled={loading}
+						/>
+					</div>
+
+					<div className='input-group'>
+						<label>Модель лыж (необязательно)</label>
+						<input
+							type='text'
+							value={skiModel}
+							onChange={e => setSkiModel(e.target.value)}
+							placeholder='Производитель Модель'
+							disabled={loading}
+							list='ski-brands'
+						/>
+						<datalist id='ski-brands'>
+							<option value='Fischer' />
+							<option value='Rossignol' />
+							<option value='Madshus' />
+							<option value='Salomon' />
+							<option value='Atomic' />
+							<option value='Pioneer' />
+							<option value='Tisa' />
+							<option value='Karhu' />
+							<option value='Peltonen' />
+						</datalist>
+					</div>
 				</div>
 
-				<div className='form-group'>
-					<label>Модель лыж (необязательно)</label>
-					<input
-						type='text'
-						value={skiModel}
-						onChange={e => setSkiModel(e.target.value)}
-						placeholder='Модель ваших лыж'
-						disabled={loading}
-					/>
-				</div>
-
-				<div className='form-group'>
-					<label>Email</label>
-					<input type='text' value={user.email} disabled className='disabled' />
-				</div>
-
-				{/* Новая секция: Настройки видимости */}
+				{/* Настройки видимости - 2 опции */}
 				<div className='form-group'>
 					<label>Настройки видимости</label>
 					<div className='visibility-options'>
+						<div className='visibility-option'>
+							<label className='radio-label'>
+								<input
+									type='radio'
+									name='visibility'
+									value='public'
+									checked={visibility === 'public'}
+									onChange={e => setVisibility(e.target.value)}
+									disabled={loading}
+								/>
+								<span className='radio-custom'></span>
+								<span className='option-title'>Публичное участие</span>
+							</label>
+							<div className='option-description'>
+								• Имя в общем рейтинге
+								<br />• Полная конкуренция
+							</div>
+						</div>
 
 						<div className='visibility-option'>
 							<label className='radio-label'>
@@ -133,27 +148,9 @@ export default function Profile({ user, onUpdate }) {
 								<br />• Вижу своё место
 							</div>
 						</div>
-
-						<div className='visibility-option'>
-							<label className='radio-label'>
-								<input
-									type='radio'
-									name='visibility'
-									value='public'
-									checked={visibility === 'public'}
-									onChange={e => setVisibility(e.target.value)}
-									disabled={loading}
-								/>
-								<span className='radio-custom'></span>
-								<span className='option-title'>Публичное участие</span>
-							</label>
-							<div className='option-description'>
-								• Имя в общем рейтинге
-								<br />• Полная конкуренция
-							</div>
-						</div>
 					</div>
 				</div>
+
 				<button
 					type='submit'
 					className='primary-btn'

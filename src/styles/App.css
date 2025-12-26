@@ -1741,3 +1741,607 @@ input, textarea, button {
 		min-width: 50px;
 	}
 }
+
+
+/* Блок предпросмотра функции */
+.feature-preview {
+	margin-top: 25px;
+	padding: 20px;
+	background: #cacbcb36 100%;
+	border: 1px solid #82929a;
+	border-radius: 10px;
+	border-left: 2px solid #6884b1;
+}
+
+.feature-preview-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 15px;
+}
+
+.feature-icon {
+	font-size: 24px;
+}
+
+.feature-preview h4 {
+	color: #3f4043;
+	margin: 0;
+	font-size: 18px;
+}
+
+.feature-preview-content p {
+	color: #374151;
+	margin-bottom: 12px;
+	line-height: 1.5;
+}
+
+.feature-preview ul {
+	padding-left: 20px;
+	margin-bottom: 20px;
+	color: #4b5563;
+}
+
+.feature-preview li {
+	margin-bottom: 6px;
+	line-height: 1.4;
+}
+
+
+/* Адаптивность */
+@media (max-width: 768px) {
+	.feature-preview {
+		padding: 15px;
+		margin-top: 20px;
+	}
+	
+	.feature-preview-header {
+		gap: 10px;
+	}
+	
+	.feature-icon {
+		font-size: 20px;
+	}
+	
+	.feature-preview h4 {
+		font-size: 16px;
+	}
+	
+	.feature-preview ul {
+		padding-left: 16px;
+	}
+	
+	.feature-preview li {
+		font-size: 14px;
+	}
+	
+	.progress-indicator {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+	}
+	
+	.progress-text {
+		text-align: center;
+	}
+}
+
+/* Стили для информации об автозаполнении */
+.auto-fill-info {
+	font-size: 11px;
+	color: #10b981;
+	font-weight: normal;
+	margin-left: 5px;
+	background: #d1fae5;
+	padding: 2px 6px;
+	border-radius: 10px;
+}
+
+/* Подсказка под полями ввода */
+.helper-text {
+	display: block;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #6b7280;
+	line-height: 1.3;
+}
+
+/* Стили для datalist */
+input[list] {
+	position: relative;
+}
+
+datalist {
+	position: absolute;
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	max-height: 200px;
+	overflow-y: auto;
+	z-index: 1000;
+}
+
+datalist option {
+	padding: 8px 12px;
+	cursor: pointer;
+}
+
+datalist option:hover {
+	background: #f3f4f6;
+}
+
+/* Стили для формы на мобильных */
+@media (max-width: 768px) {
+	.auto-fill-info {
+		font-size: 10px;
+		padding: 1px 4px;
+	}
+	
+	.helper-text {
+		font-size: 11px;
+	}
+}
+
+
+/* Стили для нового поля времени */
+.time-input {
+	width: 100%;
+}
+
+.helper-text {
+	display: block;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #3b82f6;
+	font-style: italic;
+}
+
+/* На мобильных */
+@media (max-width: 768px) {
+	.form-row {
+		flex-direction: column;
+	}
+	
+	.time-input {
+		width: 100%;
+	}
+}
+
+
+/* Компактное расположение полей в профиле */
+.form-row.compact-profile {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 15px;
+	margin-bottom: 20px;
+}
+
+/* На мобильных переходим на колонку */
+@media (max-width: 768px) {
+	.form-row.compact-profile {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+}
+
+/* Уменьшаем отступы в профиле */
+.profile-form .form-group {
+	margin-bottom: 20px;
+}
+
+/* Подсказка для поля модели лыж */
+.input-group label {
+	font-size: 14px;
+	font-weight: 500;
+	color: #374151;
+	margin-bottom: 6px;
+	display: block;
+}
+
+
+/* Стили для кнопок редактирования в таблице */
+.track-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.edit-track-btn {
+	background: none;
+	border: none;
+	font-size: 14px;
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 4px;
+	opacity: 0.7;
+	transition: all 0.2s;
+}
+
+.edit-track-btn:hover {
+	opacity: 1;
+	background: rgba(59, 130, 246, 0.1);
+}
+
+/* Модальное окно редактирования */
+.edit-form-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.edit-form-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.edit-form-card {
+	position: relative;
+	background: white;
+	border-radius: 12px;
+	padding: 25px;
+	width: 90%;
+	max-width: 600px;
+	max-height: 90vh;
+	overflow-y: auto;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	z-index: 1001;
+}
+
+.edit-form-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+}
+
+.edit-form-header h3 {
+	color: #1e40af;
+	margin: 0;
+}
+
+.close-btn {
+	background: none;
+	border: none;
+	font-size: 28px;
+	cursor: pointer;
+	color: #6b7280;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s;
+}
+
+.close-btn:hover {
+	background: #f3f4f6;
+	color: #374151;
+}
+
+/* Текущий трек */
+.current-track {
+	margin-top: 8px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+.current-track-link {
+	color: #3b82f6;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.current-track-link:hover {
+	text-decoration: underline;
+}
+
+/* Кнопки в форме редактирования */
+.form-actions {
+	display: flex;
+	gap: 12px;
+	margin-top: 20px;
+}
+
+.cancel-btn {
+	flex: 1;
+	background: #f3f4f6;
+	color: #374151;
+	border: 1px solid #d1d5db;
+	padding: 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+	background: #e5e7eb;
+}
+
+.success-btn {
+	flex: 2;
+}
+
+/* Адаптивность модального окна */
+@media (max-width: 768px) {
+	.edit-form-card {
+		width: 95%;
+		padding: 20px;
+		margin: 10px;
+	}
+	
+	.form-actions {
+		flex-direction: column;
+	}
+	
+	.cancel-btn, .success-btn {
+		width: 100%;
+	}
+}
+
+/* Стили для кнопок редактирования в таблице */
+.track-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-track-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.edit-track-btn:hover {
+  opacity: 1;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Стили для управления текущим треком */
+.current-track-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.current-track-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.current-track-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.current-track-link:hover {
+    text-decoration: underline;
+}
+
+.delete-track-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.delete-track-btn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.delete-track-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Модальное окно подтверждения удаления */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+}
+
+.confirm-modal {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-modal h4 {
+    margin: 0 0 16px 0;
+    color: #dc3545;
+}
+
+.confirm-modal p {
+    margin: 0 0 24px 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.danger-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.danger-btn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.danger-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .current-track-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .current-track-info {
+        justify-content: space-between;
+    }
+
+    .delete-track-btn {
+        width: 100%;
+    }
+
+    .confirm-modal {
+        width: 95%;
+        margin: 0 10px;
+    }
+
+    .confirm-modal-actions {
+        flex-direction: column;
+    }
+
+    .confirm-modal-actions button {
+        width: 100%;
+    }
+}
+
+
+.form-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	margin-top: 20px;
+}
+
+.save-btn {
+	background: #0066cc;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	padding: 10px 20px;
+	cursor: pointer;
+	font-weight: 500;
+	transition: background 0.2s;
+}
+
+.save-btn:hover:not(:disabled) {
+	background: #0052a3;
+}
+
+.save-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.delete-entry-btn {
+	background: #f0f0f0;
+	color: #666;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 10px 20px;
+	cursor: pointer;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+.delete-entry-btn:hover:not(:disabled) {
+	background: #e0e0e0;
+	color: #dc3545;
+	border-color: #dc3545;
+}
+
+.delete-entry-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 480px) {
+	.form-actions {
+		flex-direction: column;
+	}
+	
+	.save-btn,
+	.delete-entry-btn,
+	.cancel-btn {
+		width: 100%;
+	}
+}
+
+.edit-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 5px;
+	color: #666;
+	border-radius: 4px;
+}
+
+.edit-btn:hover {
+	background: #f0f0f0;
+	color: #0066cc;
+}
+
+:root {
+  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Mono', 'Roboto Mono', monospace;
+}
+
+body {
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, .file-hint, small {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}

@@ -155,7 +155,7 @@ function App() {
 			</main>
 
 			<footer className='footer'>
-				<p> 2025 Лыжный Рейтинг Друзей</p>
+				<p>2025</p>
 			</footer>
 		</div>
 	)
