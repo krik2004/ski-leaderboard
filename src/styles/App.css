@@ -670,13 +670,7 @@ input[type="date"] {
 	align-items: center;
 }
 
-.input-group label::after {
-	content: 'мин/сек';
-	font-size: 11px;
-	color: #6b7280;
-	font-weight: normal;
-	margin-left: 5px;
-}
+
 
 /* Стиль для анонимного имени */
 .anonymous-name {
@@ -1034,21 +1028,7 @@ input[type="date"] {
 	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Кнопка профиля в хедере */
-.profile-tab-btn {
-	background: rgba(255,255,255,0.1);
-	border: none;
-	color: white;
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	cursor: pointer;
-	font-size: 18px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s;
-}
+
 
 .profile-tab-btn:hover {
 	background: rgba(255,255,255,0.2);
@@ -1657,4 +1637,107 @@ input, textarea, button {
 .tab {
 	padding: 8px 6px;
 	font-size: 13px;
+}
+
+/* Кнопка с email для перехода в профиль */
+.email-profile-btn {
+	background: rgba(255, 255, 255, 0.1);
+	border: none;
+	color: white;
+	padding: 8px 12px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	transition: all 0.2s;
+	text-decoration: none;
+}
+
+.email-profile-btn:hover {
+	background: rgba(255, 255, 255, 0.2);
+	transform: translateY(-1px);
+}
+
+.email-display {
+	max-width: 150px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.profile-icon {
+	font-size: 16px;
+	opacity: 0.8;
+}
+
+/* Вкладки с текстом и иконками */
+.tab {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+}
+
+.tab-icon {
+	font-size: 16px;
+}
+
+.tab-text {
+	display: inline;
+}
+
+/* На мобильных скрываем текст вкладок, оставляем только иконки */
+@media (max-width: 768px) {
+	.tab-text {
+		display: none;
+	}
+	
+	.tab {
+		gap: 0;
+	}
+	
+	.email-display {
+		display: none;
+	}
+	
+	.email-profile-btn {
+		padding: 8px;
+		min-width: 40px;
+		justify-content: center;
+	}
+	
+	.email-profile-btn .profile-icon {
+		margin: 0;
+	}
+}
+
+/* На десктопе показываем полный email */
+@media (min-width: 769px) {
+	.email-display {
+		display: inline;
+	}
+	
+	.tab-text {
+		display: inline;
+	}
+}
+
+/* На очень маленьких экранах делаем еще компактнее */
+@media (max-width: 480px) {
+	.email-profile-btn {
+		padding: 6px;
+		min-width: 36px;
+	}
+	
+	.profile-icon {
+		font-size: 14px;
+	}
+	
+	.danger-btn.compact {
+		padding: 6px 8px;
+		font-size: 11px;
+		min-width: 50px;
+	}
 }

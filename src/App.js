@@ -94,12 +94,26 @@ function App() {
 	return (
 		<div className='container'>
 			<header className='header'>
-				<h1 className='title'>🎿 Лыжный Рейтинг</h1>
-				<div className='user-info'>
-					<span className='user-email'>{user.email}</span>
-					<button onClick={handleLogout} className='danger-btn'>
-						Выйти
-					</button>
+				<div className='header-left'>
+					<h1 className='title'>🎿 Лыжный Рейтинг</h1>
+				</div>
+
+				<div className='header-right'>
+					{user && (
+						<>
+							<button
+								className='email-profile-btn'
+								onClick={() => setActiveTab('profile')}
+								title='Перейти в профиль'
+							>
+								<span className='email-display'>{user.email}</span>
+								<span className='profile-icon'>👤</span>
+							</button>
+							<button onClick={handleLogout} className='danger-btn compact'>
+								Выйти
+							</button>
+						</>
+					)}
 				</div>
 			</header>
 
@@ -109,25 +123,22 @@ function App() {
 						className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
 						onClick={() => setActiveTab('leaderboard')}
 					>
-						🏆 Таблица
+						<span className='tab-icon'>🏆</span>
+						<span className='tab-text'>Таблица</span>
 					</button>
 					<button
 						className={`tab ${activeTab === 'add' ? 'active' : ''}`}
 						onClick={() => setActiveTab('add')}
 					>
-						➕ Добавить заезд
-					</button>
-					<button
-						className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
-						onClick={() => setActiveTab('profile')}
-					>
-						👤 Профиль
+						<span className='tab-icon'>➕</span>
+						<span className='tab-text'>Добавить</span>
 					</button>
 					<button
 						className={`tab ${activeTab === 'about' ? 'active' : ''}`}
 						onClick={() => setActiveTab('about')}
 					>
-						ℹ️ О проекте
+						<span className='tab-icon'>ℹ️</span>
+						<span className='tab-text'>О проекте</span>
 					</button>
 				</div>
 
