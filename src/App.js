@@ -24,6 +24,19 @@ function App() {
 	const [times, setTimes] = useState([])
 	const [loading, setLoading] = useState(true)
 	const [activeTab, setActiveTab] = useState('leaderboard')
+	const [isMobile, setIsMobile] = useState(false)
+
+	// Определяем мобильное устройство
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth <= 768)
+		}
+
+		checkMobile()
+		window.addEventListener('resize', checkMobile)
+
+		return () => window.removeEventListener('resize', checkMobile)
+	}, [])
 
 	useEffect(() => {
 		supabase.auth.getSession().then(({ data: { session } }) => {
@@ -87,19 +100,47 @@ function App() {
 	if (loading) {
 		return (
 			<div
-				className='container'
-				style={{ textAlign: 'center', padding: '50px' }}
+				style={{
+					textAlign: 'center',
+					padding: '50px 20px',
+					minHeight: '100vh',
+					display: 'flex',
+					flexDirection: 'column',
+					justifyContent: 'center',
+					background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+				}}
 			>
-				<Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
-				<p style={{ marginTop: '20px' }}>Загрузка...</p>
+				<Spin
+					indicator={
+						<LoadingOutlined style={{ fontSize: 48, color: '#fff' }} spin />
+					}
+				/>
+				<p style={{ marginTop: '20px', color: '#fff' }}>Загрузка...</p>
 			</div>
 		)
 	}
 
 	if (!user) {
 		return (
-			<div className='container'>
-				<Auth onLoginSuccess={setUser} />
+			<div
+				style={{
+					minHeight: '100vh',
+					padding: isMobile ? '10px' : '20px',
+					background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}
+			>
+				<div
+					style={{
+						width: '100%',
+						maxWidth: '500px',
+						padding: isMobile ? '15px' : '30px',
+					}}
+				>
+					<Auth onLoginSuccess={setUser} />
+				</div>
 			</div>
 		)
 	}
@@ -109,94 +150,200 @@ function App() {
 	}
 
 	return (
-		<Layout className='layout' style={{ minHeight: '100vh' }}>
+		<Layout
+			className='layout'
+			style={{
+				minHeight: '100vh',
+				background: isMobile
+					? '#fff'
+					: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+			}}
+		>
 			<AntHeader
 				style={{
-					background: '#fff',
-					padding: '0 20px',
+					background: isMobile ? '#fff' : '#fff',
+					padding: isMobile ? '0 10px' : '0 20px',
 					boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
+					height: isMobile ? '56px' : '64px',
 				}}
 			>
 				<div style={{ display: 'flex', alignItems: 'center' }}>
-					<h1 style={{ margin: 0, fontSize: '24px' }}>🎿 Лыжный Рейтинг</h1>
+					<h1
+						style={{
+							margin: 0,
+							fontSize: isMobile ? '18px' : '24px',
+							color: isMobile ? '#1890ff' : '#000',
+						}}
+					>
+						{isMobile ? '🎿 Лыжный Рейтинг' : '🎿 Лыжный Рейтинг'}
+					</h1>
 				</div>
 
-				<div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: isMobile ? '6px' : '10px',
+					}}
+				>
 					<Button
 						type='text'
 						icon={<UserOutlined />}
 						onClick={() => setActiveTab('profile')}
-						style={{ display: 'flex', alignItems: 'center' }}
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							padding: isMobile ? '4px 8px' : '8px 12px',
+							fontSize: isMobile ? '12px' : '14px',
+						}}
 					>
-						{user.email}
+						{!isMobile && user.email}
 					</Button>
 					<Button
 						type='text'
 						icon={<LogoutOutlined />}
 						onClick={handleLogout}
 						danger
+						size={isMobile ? 'small' : 'middle'}
 					>
-						Выйти
+						{!isMobile && 'Выйти'}
 					</Button>
 				</div>
 			</AntHeader>
 
-			<Content style={{ padding: '20px' }}>
-				<Card style={{ minHeight: 'calc(100vh - 180px)' }}>
-					<Tabs
-						activeKey={activeTab}
-						onChange={handleTabChange}
-						items={[
-							{
-								key: 'leaderboard',
-								label: (
-									<span>
-										<TrophyOutlined /> Таблица
-									</span>
-								),
-							},
-							{
-								key: 'add',
-								label: (
-									<span>
-										<PlusOutlined /> Добавить
-									</span>
-								),
-							},
-							{
-								key: 'about',
-								label: (
-									<span>
-										<InfoCircleOutlined /> О проекте
-									</span>
-								),
-							},
-						]}
-					/>
+			<Content
+				style={{
+					padding: isMobile ? '10px' : '20px',
+					background: isMobile ? '#fff' : 'transparent',
+				}}
+			>
+				{!isMobile ? (
+					<Card
+						style={{
+							minHeight: 'calc(100vh - 180px)',
+							borderRadius: '12px',
+							boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+						}}
+					>
+						<Tabs
+							activeKey={activeTab}
+							onChange={handleTabChange}
+							items={[
+								{
+									key: 'leaderboard',
+									label: (
+										<span>
+											<TrophyOutlined /> Таблица
+										</span>
+									),
+								},
+								{
+									key: 'add',
+									label: (
+										<span>
+											<PlusOutlined /> Добавить
+										</span>
+									),
+								},
+								{
+									key: 'about',
+									label: (
+										<span>
+											<InfoCircleOutlined /> О проекте
+										</span>
+									),
+								},
+							]}
+						/>
 
-					<div style={{ marginTop: '20px' }}>
-						{activeTab === 'leaderboard' && (
-							<Leaderboard
-								times={times}
-								user={user}
-								onTimeUpdated={fetchTimes}
-							/>
-						)}
-						{activeTab === 'add' && (
-							<AddTimeForm user={user} onTimeAdded={fetchTimes} />
-						)}
-						{activeTab === 'profile' && (
-							<Profile user={user} onUpdate={fetchTimes} />
-						)}
-						{activeTab === 'about' && <About />}
+						<div style={{ marginTop: '20px' }}>
+							{activeTab === 'leaderboard' && (
+								<Leaderboard
+									times={times}
+									user={user}
+									onTimeUpdated={fetchTimes}
+								/>
+							)}
+							{activeTab === 'add' && (
+								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
+							)}
+							{activeTab === 'profile' && (
+								<Profile user={user} onUpdate={fetchTimes} />
+							)}
+							{activeTab === 'about' && <About />}
+						</div>
+					</Card>
+				) : (
+					// Мобильная версия без лишних оберток
+					<div>
+						<Tabs
+							activeKey={activeTab}
+							onChange={handleTabChange}
+							items={[
+								{
+									key: 'leaderboard',
+									label: (
+										<span>
+											<TrophyOutlined /> Таблица
+										</span>
+									),
+								},
+								{
+									key: 'add',
+									label: (
+										<span>
+											<PlusOutlined /> Добавить
+										</span>
+									),
+								},
+								{
+									key: 'about',
+									label: (
+										<span>
+											<InfoCircleOutlined /> О проекте
+										</span>
+									),
+								},
+							]}
+							style={{
+								marginBottom: '10px',
+							}}
+						/>
+
+						<div>
+							{activeTab === 'leaderboard' && (
+								<Leaderboard
+									times={times}
+									user={user}
+									onTimeUpdated={fetchTimes}
+								/>
+							)}
+							{activeTab === 'add' && (
+								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
+							)}
+							{activeTab === 'profile' && (
+								<Profile user={user} onUpdate={fetchTimes} />
+							)}
+							{activeTab === 'about' && <About />}
+						</div>
 					</div>
-				</Card>
+				)}
 			</Content>
 
-			<Footer style={{ textAlign: 'center' }}>Лыжный Рейтинг ©2025</Footer>
+			{!isMobile && (
+				<Footer
+					style={{
+						textAlign: 'center',
+						background: '#fff',
+						padding: '15px 20px',
+					}}
+				>
+					Лыжный Рейтинг ©2025
+				</Footer>
+			)}
 		</Layout>
 	)
 }
