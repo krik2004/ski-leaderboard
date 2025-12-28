@@ -1,0 +1,66 @@
+.card {
+  min-height: 600px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mapContainer {
+  width: 100%;
+  height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid #f0f0f0;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500px;
+  gap: 20px;
+  color: #666;
+}
+
+.legend {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 6px;
+  border-left: 4px solid #1890ff;
+  margin-top: 20px;
+}
+
+.legend h4 {
+  margin-bottom: 12px;
+  color: #262626;
+}
+
+.legend ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 10px;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .mapContainer {
+    height: 400px;
+  }
+  
+  .loadingContainer {
+    height: 400px;
+  }
+  
+  .card {
+    min-height: auto;
+    padding: 12px;
+  }
+}

@@ -16,6 +16,8 @@ import { Profile } from './features/profile'
 import { AddTimeForm } from './features/lap-times'
 import Leaderboard from './widgets/Leaderboard/ui/Leaderboard'
 import { About } from './widgets/about'
+import Map from './widgets/Map'
+import { EnvironmentOutlined } from '@ant-design/icons'
 
 import './styles/base.css'
 import './styles/components.css'
@@ -252,11 +254,20 @@ function App() {
 										</span>
 									),
 								},
+
 								{
 									key: 'add',
 									label: (
 										<span>
 											<PlusOutlined /> Добавить
+										</span>
+									),
+								},
+								{
+									key: 'map', // НОВЫЙ КЛЮЧ
+									label: (
+										<span>
+											<EnvironmentOutlined /> Карта ЛБК
 										</span>
 									),
 								},
@@ -270,7 +281,6 @@ function App() {
 								},
 							]}
 						/>
-
 						<div style={{ marginTop: '20px' }}>
 							{activeTab === 'leaderboard' && (
 								<Leaderboard
@@ -279,6 +289,7 @@ function App() {
 									onTimeUpdated={fetchTimes}
 								/>
 							)}
+							{activeTab === 'map' && <Map />}
 							{activeTab === 'add' && (
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 							)}
@@ -300,6 +311,14 @@ function App() {
 									label: (
 										<span>
 											<TrophyOutlined /> Таблица
+										</span>
+									),
+								},
+								{
+									key: 'map', // НОВЫЙ КЛЮЧ
+									label: (
+										<span>
+											<EnvironmentOutlined /> Карта
 										</span>
 									),
 								},

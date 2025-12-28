@@ -382,33 +382,7 @@ const Leaderboard = ({ times, user, onTimeUpdated, isMobile = false }) => {
 				)}
 			/>
 
-			{/* Карта трассы в разработке */}
-			<div
-				style={{
-					marginTop: '24px',
-					padding: '16px',
-					background: '#f6ffed',
-					border: '1px solid #b7eb8f',
-					borderRadius: '8px',
-				}}
-			>
-				<div
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px',
-						marginBottom: '8px',
-					}}
-				>
-					<TrophyOutlined style={{ color: '#52c41a' }} />
-					<h4 style={{ margin: 0, fontSize: '16px', color: '#389e0d' }}>
-						Карта трассы в разработке
-					</h4>
-				</div>
-				<p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-					Скоро здесь появится интерактивная карта трассы с отображением треков.
-				</p>
-			</div>
+
 
 			{/* Модальное окно редактирования */}
 			{editingTime && (
