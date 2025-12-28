@@ -64,3 +64,36 @@
     padding: 12px;
   }
 }
+
+.mapContainer {
+  width: 100%;
+  height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid #f0f0f0;
+  position: relative;
+}
+
+/* УБИРАЕМ ФЛАГ */
+.mapContainer :global(.leaflet-attribution-flag) {
+  display: none !important;
+}
+
+/* Уменьшаем атрибуцию */
+.mapContainer :global(.leaflet-control-attribution) {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #666;
+  border-radius: 3px;
+}
+
+.mapContainer :global(.leaflet-control-attribution a) {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.mapContainer :global(.leaflet-control-attribution a:hover) {
+  text-decoration: underline;
+}

@@ -15,11 +15,10 @@ const Map = () => {
 				[55.715, 37.361],
 				15
 			)
-
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '© OpenStreetMap',
-				maxZoom: 19,
-			}).addTo(mapInstance)
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	attribution: '© OpenStreetMap',
+	maxZoom: 19,
+}).addTo(mapInstance)
 
 			mapInstanceRef.current = mapInstance
 		}
@@ -58,3 +57,5 @@ const Map = () => {
 }
 
 export default Map
+
+
