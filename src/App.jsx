@@ -186,12 +186,16 @@ function App() {
 					<h1
 						style={{
 							margin: 0,
-							fontSize: isMobile ? '18px' : '24px',
+							fontSize: isMobile ? '16px' : '24px',
 							color: isMobile ? '#1890ff' : '#000',
+							whiteSpace: 'nowrap',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							maxWidth: isMobile ? '200px' : 'none',
 						}}
 					>
 						{isMobile
-							? '🎿 Лыжный Рейтинг (ЛБК, малый круг)'
+							? '🎿 Ретинг ЛБК малый круг	'
 							: '🎿 Лыжный Рейтинг (ЛБК, малый круг)'}
 					</h1>
 				</div>
@@ -289,7 +293,7 @@ function App() {
 									onTimeUpdated={fetchTimes}
 								/>
 							)}
-							{activeTab === 'map' && <Map />}
+							{activeTab === 'map' && <Map user={user} />}
 							{activeTab === 'add' && (
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 							)}
