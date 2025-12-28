@@ -1,0 +1,127 @@
+.aboutContainer {
+  padding: 20px;
+}
+
+.section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section h3 {
+  color: #1890ff;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.section p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.section ul {
+  padding-left: 20px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.newsSection {
+  margin-top: 32px;
+}
+
+.newsItem {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.newsItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.newsDate {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.newsTitle {
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.newsContent {
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .aboutContainer {
+    padding: 12px;
+  }
+  
+  .section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+  
+  .newsItem {
+    padding: 12px 0;
+  }
+}
+
+
+/* Стили для контактов */
+.contactsSection {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.telegramLink {
+  color: #1890ff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.telegramLink:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Стили для технологий */
+.techSection {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px dashed #f0f0f0;
+  text-align: center;
+}
+
+.techText {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.telegramIcon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  fill: currentColor;
+  vertical-align: middle;
+}

@@ -1,0 +1,77 @@
+/* Стили для страницы аутентификации */
+
+.authPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  background: white;
+}
+
+.authHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.authIcon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.authTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.authSubtitle {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.authForm {
+  width: 100%;
+}
+
+.authToggle {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.authToggleButton {
+  padding: 0;
+  height: auto;
+}
+
+.authInfo {
+  margin-top: 24px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .authPage {
+    padding: 16px;
+  }
+  
+  .authCard {
+    padding: 20px !important;
+  }
+  
+  .authIcon {
+    font-size: 40px;
+  }
+  
+  .authTitle {
+    font-size: 20px;
+  }
+}

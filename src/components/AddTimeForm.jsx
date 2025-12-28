@@ -1,243 +1,179 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+	Form,
+	Input,
+	InputNumber,
+	DatePicker,
+	Button,
+	Upload,
+	message,
+	Spin,
+	Alert,
+	Typography,
+	Space,
+	Card,
+} from 'antd'
+import {
+	UploadOutlined,
+	PlusOutlined,
+	CheckCircleOutlined,
+	FileTextOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+import dayjs from 'dayjs'
 
-export default function AddTimeForm({ user, onTimeAdded }) {
-	const [minutes, setMinutes] = useState('')
-	const [seconds, setSeconds] = useState('')
-	const [selectedDate, setSelectedDate] = useState('')
-	const [comment, setComment] = useState('')
-	const [skiModel, setSkiModel] = useState('')
-	const [gpxFile, setGpxFile] = useState(null)
-	const [isUploading, setIsUploading] = useState(false)
+const { TextArea } = Input
+const { Text } = Typography
+
+export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
+	const [form] = Form.useForm()
+	const [uploading, setUploading] = useState(false)
 	const [loading, setLoading] = useState(false)
-	const [message, setMessage] = useState('')
-const [userProfile, setUserProfile] = useState(null)
-const [autoFilledSkiModel, setAutoFilledSkiModel] = useState('')
+	const [fileList, setFileList] = useState([])
+	const [userProfile, setUserProfile] = useState(null)
+	const [autoFilledSkiModel, setAutoFilledSkiModel] = useState('')
 
-async function handleSubmit(e) {
-	e.preventDefault()
-
-	// Проверяем что заполнены минуты и секунды
-	if (!minutes && !seconds) {
-		setMessage('Введите время заезда')
-		return
-	}
-
-	// Конвертируем в секунды
-	const totalSeconds = parseInt(minutes || 0) * 60 + parseInt(seconds || 0)
-
-	if (totalSeconds <= 0) {
-		setMessage('Время должно быть больше 0 секунд')
-		return
-	}
-
-	setLoading(true)
-	setMessage('')
-
-	try {
-		let gpxData = null
-		if (gpxFile) {
-			gpxData = await uploadGpxFile(gpxFile)
-		}
-
-		// Формируем полную дату с временем
-		const dateTime = selectedDate
-			? new Date(selectedDate).toISOString()
-			: new Date().toISOString()
-
-		const { error } = await supabase.from('lap_times').insert({
-			user_id: user.id,
-			time_seconds: totalSeconds,
-			comment: comment.trim() || null,
-			ski_model: skiModel.trim() || null, // Используем значение из поля формы
-			gpx_track_url: gpxData?.url || null,
-			verified: !!gpxData,
-			date: dateTime,
-			user_name: user.email.split('@')[0],
+	// Устанавливаем текущую дату по умолчанию и загружаем профиль
+	useEffect(() => {
+		// Устанавливаем текущую дату
+		form.setFieldsValue({
+			date: dayjs(),
 		})
 
-		if (error) throw error
+		// Загружаем профиль пользователя для авто-заполнения модели лыж
+		async function loadUserProfile() {
+			if (user) {
+				const { data } = await supabase
+					.from('profiles')
+					.select('ski_model')
+					.eq('id', user.id)
+					.single()
 
-		setMessage(
-			gpxData ? '✅ Заезд добавлен с подтверждением!' : '✅ Заезд добавлен!'
-		)
-
-		// Сброс полей формы, но оставляем модель лыж если она из профиля
-		setMinutes('')
-		setSeconds('')
-		setComment('')
-		setGpxFile(null)
-		// Не сбрасываем skiModel если она из профиля
-		const today = new Date().toISOString().split('T')[0]
-		setSelectedDate(today)
-		document.getElementById('gpx-upload').value = ''
-
-		// Автоматически заполняем модель лыж из профиля для следующего заезда
-		if (autoFilledSkiModel) {
-			setSkiModel(autoFilledSkiModel)
+				if (data?.ski_model) {
+					setAutoFilledSkiModel(data.ski_model)
+					form.setFieldsValue({
+						skiModel: data.ski_model,
+					})
+				}
+			}
 		}
 
-		onTimeAdded()
-	} catch (error) {
-		setMessage('❌ Ошибка: ' + error.message)
-	} finally {
-		setLoading(false)
-	}
-}
-	// Устанавливаем текущую дату по умолчанию
-	useEffect(() => {
-		const today = new Date().toISOString().split('T')[0]
-		setSelectedDate(today)
-	}, [])
+		loadUserProfile()
+	}, [user, form])
 
-	const handleFileChange = e => {
-		const file = e.target.files[0]
-		if (file && file.name.endsWith('.gpx')) {
-			setGpxFile(file)
-		} else {
-			alert('Пожалуйста, выберите GPX файл')
-			e.target.value = ''
+	// Функция для транслитерации
+	const transliterate = text => {
+		const ru = {
+			а: 'a',
+			б: 'b',
+			в: 'v',
+			г: 'g',
+			д: 'd',
+			е: 'e',
+			ё: 'yo',
+			ж: 'zh',
+			з: 'z',
+			и: 'i',
+			й: 'y',
+			к: 'k',
+			л: 'l',
+			м: 'm',
+			н: 'n',
+			о: 'o',
+			п: 'p',
+			р: 'r',
+			с: 's',
+			т: 't',
+			у: 'u',
+			ф: 'f',
+			х: 'h',
+			ц: 'ts',
+			ч: 'ch',
+			ш: 'sh',
+			щ: 'shch',
+			ъ: '',
+			ы: 'y',
+			ь: '',
+			э: 'e',
+			ю: 'yu',
+			я: 'ya',
 		}
+
+		return text
+			.toLowerCase()
+			.split('')
+			.map(char => ru[char] || char)
+			.join('')
 	}
 
-async function uploadGpxFile(file) {
-	if (!file) return null
+	// Загрузка GPX файла
+	const uploadGpxFile = async file => {
+		setUploading(true)
+		try {
+			const originalName = file.name.replace(/\.[^/.]+$/, '')
+			const transliteratedName = transliterate(originalName)
+			const safeName = transliteratedName
+				.replace(/[^a-zA-Z0-9]/g, '_')
+				.replace(/_+/g, '_')
+				.replace(/^_+|_+$/g, '')
 
-	setIsUploading(true)
-	try {
-		// Функция для транслитерации кириллицы в латиницу
-		function transliterate(text) {
-			const ru = {
-				а: 'a',
-				б: 'b',
-				в: 'v',
-				г: 'g',
-				д: 'd',
-				е: 'e',
-				ё: 'yo',
-				ж: 'zh',
-				з: 'z',
-				и: 'i',
-				й: 'y',
-				к: 'k',
-				л: 'l',
-				м: 'm',
-				н: 'n',
-				о: 'o',
-				п: 'p',
-				р: 'r',
-				с: 's',
-				т: 't',
-				у: 'u',
-				ф: 'f',
-				х: 'h',
-				ц: 'ts',
-				ч: 'ch',
-				ш: 'sh',
-				щ: 'shch',
-				ъ: '',
-				ы: 'y',
-				ь: '',
-				э: 'e',
-				ю: 'yu',
-				я: 'ya',
+			const fileExt = file.name.split('.').pop().toLowerCase()
+			const fileName = `${Date.now()}_${user.id}_${
+				safeName || 'track'
+			}.${fileExt}`
+			const finalFileName = safeName
+				? fileName
+				: `${Date.now()}_${user.id}_track.${fileExt}`
+
+			const { error } = await supabase.storage
+				.from('gpx-tracks')
+				.upload(finalFileName, file)
+
+			if (error) {
+				console.error('Ошибка Supabase при загрузке:', error)
+				throw error
 			}
 
-			return text
-				.toLowerCase()
-				.split('')
-				.map(char => ru[char] || char)
-				.join('')
+			const {
+				data: { publicUrl },
+			} = supabase.storage.from('gpx-tracks').getPublicUrl(finalFileName)
+
+			return { url: publicUrl }
+		} catch (error) {
+			console.error('Ошибка загрузки GPX:', error)
+			message.error('Ошибка загрузки файла: ' + error.message)
+			return null
+		} finally {
+			setUploading(false)
 		}
-
-		// Получаем имя файла без расширения
-		const originalName = file.name.replace(/\.[^/.]+$/, '')
-		const transliteratedName = transliterate(originalName)
-
-		// Очищаем от спецсимволов
-		const safeName = transliteratedName
-			.replace(/[^a-zA-Z0-9]/g, '_') // оставляем только латиницу и цифры
-			.replace(/_+/g, '_') // убираем повторяющиеся _
-			.replace(/^_+|_+$/g, '') // убираем _ в начале и конце
-
-		// Получаем расширение файла
-		const fileExt = file.name.split('.').pop().toLowerCase()
-
-		// Формируем финальное имя файла
-		const fileName = `${Date.now()}_${user.id}_${
-			safeName || 'track'
-		}.${fileExt}`
-
-		// Если имя получилось пустым, используем просто track
-		const finalFileName = safeName
-			? fileName
-			: `${Date.now()}_${user.id}_track.${fileExt}`
-
-		console.log('Оригинальное имя:', file.name)
-		console.log('Транслитерированное:', transliteratedName)
-		console.log('Безопасное имя:', safeName)
-		console.log('Финальное имя:', finalFileName)
-
-		const { data, error } = await supabase.storage
-			.from('gpx-tracks')
-			.upload(finalFileName, file)
-
-		if (error) {
-			console.error('Ошибка Supabase при загрузке:', error)
-			throw error
-		}
-
-		const {
-			data: { publicUrl },
-		} = supabase.storage.from('gpx-tracks').getPublicUrl(finalFileName)
-
-		console.log('✅ Файл успешно загружен:', publicUrl)
-		return { url: publicUrl }
-	} catch (error) {
-		console.error('Ошибка загрузки GPX:', error)
-		alert('Ошибка загрузки файла: ' + error.message)
-		return null
-	} finally {
-		setIsUploading(false)
 	}
-}
 
-	async function handleSubmit(e) {
-		e.preventDefault()
+	// Обработчик отправки формы
+	const handleSubmit = async values => {
+		const { minutes, seconds, date, skiModel, comment } = values
 
-		// Проверяем что заполнены минуты и секунды
-		if (!minutes && !seconds) {
-			setMessage('Введите время заезда')
-			return
-		}
-
-		// Конвертируем в секунды
-		const totalSeconds = parseInt(minutes || 0) * 60 + parseInt(seconds || 0)
+		const totalSeconds = (minutes || 0) * 60 + (seconds || 0)
 
 		if (totalSeconds <= 0) {
-			setMessage('Время должно быть больше 0 секунд')
+			message.error('Время должно быть больше 0 секунд')
 			return
 		}
 
 		setLoading(true)
-		setMessage('')
 
 		try {
 			let gpxData = null
-			if (gpxFile) {
-				gpxData = await uploadGpxFile(gpxFile)
+			if (fileList.length > 0) {
+				gpxData = await uploadGpxFile(fileList[0])
 			}
 
-			// Формируем полную дату с временем (если нужно, можно добавить выбор времени)
-			const dateTime = selectedDate
-				? new Date(selectedDate).toISOString()
-				: new Date().toISOString()
+			const dateTime = date ? date.toISOString() : new Date().toISOString()
 
 			const { error } = await supabase.from('lap_times').insert({
 				user_id: user.id,
 				time_seconds: totalSeconds,
-				comment: comment || null,
-				ski_model: skiModel.trim() || null,
+				comment: comment?.trim() || null,
+				ski_model: skiModel?.trim() || null,
 				gpx_track_url: gpxData?.url || null,
 				verified: !!gpxData,
 				date: dateTime,
@@ -246,191 +182,254 @@ async function uploadGpxFile(file) {
 
 			if (error) throw error
 
-			setMessage(
-				gpxData ? '✅ Заезд добавлен с подтверждением!' : '✅ Заезд добавлен!'
+			// Успешное добавление
+			message.success(
+				gpxData ? 'Заезд добавлен с подтверждением!' : 'Заезд добавлен!',
+				3
 			)
 
-			// Сброс полей формы
-			setMinutes('')
-			setSeconds('')
-			setComment('')
-			setSkiModel('')
-			setGpxFile(null)
-			const today = new Date().toISOString().split('T')[0]
-			setSelectedDate(today)
-			document.getElementById('gpx-upload').value = ''
+			// Сброс формы
+			form.resetFields()
+			setFileList([])
 
-			onTimeAdded()
+			// Восстанавливаем авто-заполненную модель лыж
+			if (autoFilledSkiModel) {
+				form.setFieldsValue({
+					skiModel: autoFilledSkiModel,
+				})
+			}
+
+			// Устанавливаем текущую дату
+			form.setFieldsValue({
+				date: dayjs(),
+			})
+
+			onTimeAdded?.()
 		} catch (error) {
-			setMessage('❌ Ошибка: ' + error.message)
+			console.error('Ошибка добавления заезда:', error)
+			message.error('Ошибка: ' + error.message)
 		} finally {
 			setLoading(false)
 		}
 	}
 
+	// Настройки загрузки файлов
+	const uploadProps = {
+		onRemove: () => {
+			setFileList([])
+		},
+		beforeUpload: file => {
+			if (!file.name.endsWith('.gpx')) {
+				message.error('Пожалуйста, выберите GPX файл')
+				return Upload.LIST_IMPORT
+			}
+			setFileList([file])
+			return false
+		},
+		fileList,
+		maxCount: 1,
+		accept: '.gpx',
+	}
+
 	return (
-		<div className='add-form'>
-			<h3>📝 Добавить новый заезд</h3>
-			{message && <div className='message-box'>{message}</div>}
-
-			<form onSubmit={handleSubmit}>
-	
-				<div className='form-row'>
-					{/* Поле для выбора даты */}
-					<div className='input-group'>
-						<label>Дата заезда</label>
-						<input
-							type='date'
-							value={selectedDate}
-							onChange={e => setSelectedDate(e.target.value)}
-							max={new Date().toISOString().split('T')[0]}
-							required
-							disabled={loading || isUploading}
-						/>
-					</div>
-
-					{/* Поля для времени */}
-					<div className='input-group'>
-						<label>Минуты</label>
-						<input
-							type='number'
-							placeholder='0'
-							value={minutes}
-							onChange={e => {
-								const value = e.target.value
-								if (
-									value === '' ||
-									(parseInt(value) >= 0 && parseInt(value) <= 59)
-								) {
-									setMinutes(value)
-								}
-							}}
-							min='0'
-							max='59'
-							disabled={loading || isUploading}
-							className='time-input'
-						/>
-					</div>
-
-					<div className='input-group'>
-						<label>Секунды</label>
-						<input
-							type='number'
-							placeholder='0'
-							value={seconds}
-							onChange={e => {
-								const value = e.target.value
-								if (
-									value === '' ||
-									(parseInt(value) >= 0 && parseInt(value) <= 59)
-								) {
-									setSeconds(value)
-								}
-							}}
-							min='0'
-							max='59'
-							disabled={loading || isUploading}
-							className='time-input'
-						/>
-					</div>
-				</div>
-
-				{/* Новое поле: Модель лыж */}
-				<div className='form-row'>
-					<div className='input-group'>
-	
-						<input
-							type='text'
-							placeholder='Например: Fischer Speedmax'
-							value={skiModel}
-							onChange={e => setSkiModel(e.target.value)}
-							disabled={loading || isUploading}
-							list='ski-models'
-						/>
-						<datalist id='ski-models'>
-							<option value='Brados' />
-							<option value='Fischer' />
-							<option value='Rossignol' />
-							<option value='Madshus' />
-							<option value='Salomon' />
-							<option value='Atomic' />
-						</datalist>
-						<small className='helper-text'>
-							{autoFilledSkiModel
-								? 'Модель из вашего профиля. Можете изменить для этого заезда.'
-								: 'Укажите модель лыж для этого заезда'}
-						</small>
-					</div>
-				</div>
-
-				<div className='form-row'>
-					<div className='input-group'>
-						<label>GPX трек (необязательно)</label>
-						<div className='file-upload'>
-							<label className='file-upload-label'>
-								<input
-									id='gpx-upload'
-									type='file'
-									accept='.gpx'
-									onChange={handleFileChange}
-									disabled={loading || isUploading}
-								/>
-								<span className='file-upload-button'>
-									{gpxFile ? '📁 ' + gpxFile.name : '📎 Выберите GPX файл'}
-								</span>
-							</label>
-							{gpxFile && !isUploading && (
-								<button
-									type='button'
-									onClick={() => {
-										setGpxFile(null)
-										document.getElementById('gpx-upload').value = ''
-									}}
-									className='remove-file-btn'
-								>
-									✕
-								</button>
-							)}
-						</div>
-						<small className='file-hint'>
-							{isUploading
-								? 'Загрузка файла...'
-								: 'Загрузите трек для подтверждения заезда'}
-						</small>
-					</div>
-
-					<div className='input-group'>
-						<label>Комментарий</label>
-						<input
-							type='text'
-							placeholder='Погода, состояние трассы...'
-							value={comment}
-							onChange={e => setComment(e.target.value)}
-							disabled={loading || isUploading}
-						/>
-					</div>
-				</div>
-
-				<button
-					type='submit'
-					className='success-btn'
-					disabled={loading || isUploading || (!minutes && !seconds)}
+		<Card
+			title={
+				<Space>
+					<PlusOutlined />
+					<span>Добавить новый заезд</span>
+				</Space>
+			}
+			bordered={false}
+			style={{ width: '100%' }}
+		>
+			<Spin spinning={loading || uploading}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+					disabled={loading || uploading}
 				>
-					{isUploading
-						? '📤 Загрузка трека...'
-						: loading
-						? '⏳ Добавление...'
-						: '🎿 Добавить заезд'}
-				</button>
+					<Space direction='vertical' size='middle' style={{ width: '100%' }}>
+						{/* Дата и время */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Дата заезда'
+								name='date'
+								rules={[{ required: true, message: 'Выберите дату' }]}
+								style={{ flex: 1, minWidth: '150px' }}
+							>
+								<DatePicker
+									format='DD.MM.YYYY'
+									style={{ width: '100%' }}
+									disabledDate={current =>
+										current && current > dayjs().endOf('day')
+									}
+								/>
+							</Form.Item>
 
-				{gpxFile && (
-					<div className='verification-info'>
-						<div className='verification-badge'>
-							✅ Этот заезд будет отмечен как "Подтвержденный"
+							<Form.Item
+								label='Минуты'
+								name='minutes'
+								rules={[
+									{ required: true, message: 'Введите минуты' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Секунды'
+								name='seconds'
+								rules={[
+									{ required: true, message: 'Введите секунды' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
 						</div>
-					</div>
-				)}
-			</form>
-		</div>
+
+						{/* Модель лыж */}
+						<Form.Item
+							label='Модель лыж'
+							name='skiModel'
+							extra={
+								autoFilledSkiModel
+									? 'Модель из вашего профиля. Можете изменить для этого заезда.'
+									: 'Укажите модель лыж для этого заезда'
+							}
+						>
+							<Input
+								placeholder='Например: Fischer Speedmax'
+								list='ski-models'
+							/>
+							<datalist id='ski-models'>
+								<option value='Brados' />
+								<option value='Fischer' />
+								<option value='Rossignol' />
+								<option value='Madshus' />
+								<option value='Salomon' />
+								<option value='Atomic' />
+								<option value='Tisa' />
+							</datalist>
+						</Form.Item>
+
+						{/* GPX трек и комментарий */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='GPX трек (необязательно)'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Space
+									direction='vertical'
+									size='small'
+									style={{ width: '100%' }}
+								>
+									<Upload {...uploadProps}>
+										<Button icon={<UploadOutlined />}>
+											{fileList.length > 0
+												? fileList[0].name
+												: 'Выберите GPX файл'}
+										</Button>
+									</Upload>
+
+									<Text type='secondary'>
+										{uploading
+											? 'Загрузка файла...'
+											: 'Загрузите трек для подтверждения заезда'}
+									</Text>
+								</Space>
+							</Form.Item>
+
+							<Form.Item
+								label='Комментарий'
+								name='comment'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Погода, состояние трассы...'
+									maxLength={100}
+								/>
+							</Form.Item>
+						</div>
+
+						{/* Информация о подтверждении */}
+						{fileList.length > 0 && (
+							<Alert
+								message='Подтверждение заезда'
+								description="Этот заезд будет отмечен как 'Подтвержденный' после загрузки GPX трека."
+								type='success'
+								showIcon
+								icon={<CheckCircleOutlined />}
+							/>
+						)}
+
+						{/* Кнопка отправки */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={<PlusOutlined />}
+								loading={loading}
+								disabled={uploading}
+								size='large'
+								block={isMobile}
+								style={{
+									backgroundColor: '#52c41a',
+									borderColor: '#52c41a',
+									height: '48px',
+									fontSize: '16px',
+								}}
+							>
+								{uploading
+									? 'Загрузка трека...'
+									: loading
+									? 'Добавление...'
+									: '🎿 Добавить заезд'}
+							</Button>
+						</Form.Item>
+
+						{/* Подсказки */}
+						<Alert
+							message='Подсказки'
+							description={
+								<Space
+									direction='vertical'
+									size='small'
+									style={{ width: '100%' }}
+								>
+									<Text type='secondary'>
+										• GPX файлы подтверждают заезд и добавляют статус
+										"Подтвержденный"
+									</Text>
+									<Text type='secondary'>
+										• Модель лыж можно указать для каждого заезда отдельно
+									</Text>
+									<Text type='secondary'>
+										• Комментарий помогает запомнить условия заезда
+									</Text>
+								</Space>
+							}
+							type='info'
+							showIcon
+						/>
+					</Space>
+				</Form>
+			</Spin>
+		</Card>
 	)
 }

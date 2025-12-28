@@ -1,123 +1,180 @@
 import React from 'react'
+import { Card, Typography, List, Space } from 'antd'
+import {
+  InfoCircleOutlined,
+  RocketOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  CloudUploadOutlined,
+  CodeOutlined,
+  MessageOutlined,
+  CalendarOutlined
+} from '@ant-design/icons'
+import styles from './About.module.css'
+
+const { Title, Text, Paragraph } = Typography
 
 export default function About() {
-	return (
-		<div className='about-card'>
-			<h2>О проекте</h2>
+  return (
+		<Card
+			title={
+				<Space>
+					<InfoCircleOutlined />
+					<span>О проекте</span>
+				</Space>
+			}
+			bordered={false}
+		>
+			<div className={styles.aboutContainer}>
+				{/* Что это? */}
+				<div className={styles.section}>
+					<Title level={4}>
+						<RocketOutlined style={{ marginRight: '8px' }} />
+						Что это?
+					</Title>
+					<Paragraph>
+						Лыжный Рейтинг Друзей — это платформа для сравнения результатов в
+						лыжных заездах среди друзей. Отслеживайте свои результаты и
+						прогресс!
+					</Paragraph>
+				</div>
 
-			<div className='section'>
-				<h3>Что это?</h3>
-				<p>
-					Лыжный Рейтинг Друзей — это платформа для сравнения результатов в
-					лыжных заездах среди друзей. Отслеживайте свои результаты и прогресс!
-				</p>
-			</div>
+				{/* Как это работает? */}
+				<div className={styles.section}>
+					<Title level={4}>Как это работает?</Title>
+					<List
+						size='small'
+						dataSource={[
+							'Добавляйте заезды — вводите время и загружайте GPX треки',
+							'Редактируйте заезды — обновляйте время, модель лыж, добавляйте GPX треки',
+							'Сравнивайте результаты — смотрите таблицу лидеров',
+							'Подтверждайте заезды — GPX файлы добавляют статус "Подтверждено"',
+							'Анализируйте прогресс — отслеживайте улучшение результатов',
+						]}
+						renderItem={item => (
+							<List.Item>
+								<Text>• {item}</Text>
+							</List.Item>
+						)}
+					/>
+				</div>
 
-			<div className='section'>
-				<h3>Как это работает?</h3>
-				<ul>
-					<li>
-						<strong>Добавляйте заезды</strong> — вводите время и загружайте GPX
-						треки
-					</li>
-					<li>
-						<strong>Редактируйте заезды</strong> — обновляйте время, модель лыж,
-						добавляйте GPX треки
-					</li>
-					<li>
-						<strong>Сравнивайте результаты</strong> — смотрите таблицу лидеров
-					</li>
-					<li>
-						<strong>Подтверждайте заезды</strong> — GPX файлы добавляют статус
-						"Подтверждено"
-					</li>
-					<li>
-						<strong>Анализируйте прогресс</strong> — отслеживайте улучшение
-						результатов
-					</li>
-				</ul>
-			</div>
+				{/* Конфиденциальность */}
+				<div className={styles.section}>
+					<Title level={4}>Конфиденциальность</Title>
+					<Paragraph>
+						Вы можете выбрать уровень видимости своих результатов:
+					</Paragraph>
+					<List
+						size='small'
+						dataSource={[
+							{
+								icon: <EyeOutlined style={{ color: '#52c41a' }} />,
+								title: 'Публичный',
+								desc: 'Все видят ваше имя и результаты',
+							},
+							{
+								icon: <EyeInvisibleOutlined style={{ color: '#fa8c16' }} />,
+								title: 'Анонимный',
+								desc: 'Вас показывают как "Лыжник №X"',
+							},
+						]}
+						renderItem={item => (
+							<List.Item>
+								<Space>
+									{item.icon}
+									<div>
+										<Text strong>{item.title}</Text>
+										<br />
+										<Text type='secondary'>{item.desc}</Text>
+									</div>
+								</Space>
+							</List.Item>
+						)}
+					/>
+				</div>
 
-			<div className='section'>
-				<h3>Конфиденциальность</h3>
-				<p>Вы можете выбрать уровень видимости своих результатов:</p>
-				<ul>
-					<li>
-						<strong>Публичный</strong> — все видят ваше имя и результаты
-					</li>
-					<li>
-						<strong>Анонимный</strong> — вас показывают как "Лыжник №X"
-					</li>
-				</ul>
-			</div>
+				{/* Новости проекта */}
+				<div className={styles.newsSection}>
+					<Title level={4}>
+						<CalendarOutlined style={{ marginRight: '8px' }} />
+						Новости проекта
+					</Title>
 
-			<div className='news-section'>
-				<h3>Новости проекта</h3>
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>27 декабря 2025</div>
+						<div className={styles.newsTitle}>
+							Добавлено редактирование заездов
+						</div>
+						<div className={styles.newsContent}>
+							Теперь можно редактировать свои заезды: обновлять время, модель
+							лыж, добавлять или удалять GPX треки. Для каждого заезда можно
+							указать свою модель лыж.
+						</div>
+					</div>
 
-				<div className='news-item'>
-					<div className='news-date'>27 декабря 2025</div>
-					<div className='news-title'>Добавлено редактирование заездов</div>
-					<div className='news-content'>
-						Теперь можно редактировать свои заезды: обновлять время, модель лыж,
-						добавлять или удалять GPX треки. Для каждого заезда можно указать
-						свою модель лыж.
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>24 декабря 2025</div>
+						<div className={styles.newsTitle}>
+							Добавлены настройки конфиденциальности
+						</div>
+						<div className={styles.newsContent}>
+							Теперь можно выбрать, как показывать ваши результаты: публично или
+							анонимно. В анонимном режиме вы отображаетесь как "Лыжник №X".
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>23 декабря 2025</div>
+						<div className={styles.newsTitle}>Загрузка GPX треков</div>
+						<div className={styles.newsContent}>
+							Добавлена возможность загружать GPX файлы для подтверждения
+							заездов. Заезды с треками отмечаются как "Подтвержденные".
+							Исправлена загрузка файлов с кириллическими именами.
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>21 декабря 2025</div>
+						<div className={styles.newsTitle}>Запуск проекта</div>
+						<div className={styles.newsContent}>
+							Проект успешно запущен под названием "Лыжный Рейтинг Друзей".
+						</div>
 					</div>
 				</div>
 
+				{/* Технологии */}
 
-				<div className='news-item'>
-					<div className='news-date'>24 декабря 2025</div>
-					<div className='news-title'>
-						Добавлены настройки конфиденциальности
-					</div>
-					<div className='news-content'>
-						Теперь можно выбрать, как показывать ваши результаты: публично или
-						анонимно. В анонимном режиме вы отображаетесь как "Лыжник №X".
-					</div>
+				{/* Контакты */}
+				{/* Контакты - отдельно с отступом */}
+				<div className={`${styles.section} ${styles.contactsSection}`}>
+					<Title level={4}>
+						<MessageOutlined style={{ marginRight: '8px' }} />
+						Контакты
+					</Title>
+					<Paragraph>
+						<Space>
+							Есть вопросы или предложения? Для связи: телеграм
+							<a
+								href='https://t.me/titov_films'
+								target='_blank'
+								rel='noopener noreferrer'
+								className={styles.telegramLink}
+							>
+								@titov_films
+							</a>
+						</Space>
+					</Paragraph>
 				</div>
 
-				<div className='news-item'>
-					<div className='news-date'>23 декабря 2025</div>
-					<div className='news-title'>Загрузка GPX треков</div>
-					<div className='news-content'>
-						Добавлена возможность загружать GPX файлы для подтверждения заездов.
-						Заезды с треками отмечаются как "Подтвержденные". Исправлена
-						загрузка файлов с кириллическими именами.
-					</div>
-				</div>
-
-				<div className='news-item'>
-					<div className='news-date'>21 декабря 2025</div>
-					<div className='news-title'>Запуск проекта</div>
-					<div className='news-content'>
-						Проект успешно запущен под названием "Лыжный Рейтинг Друзей".
-					</div>
+				{/* Технологии */}
+				<div className={styles.techSection}>
+					<Text type='secondary' className={styles.techText}>
+						<CodeOutlined style={{ marginRight: '6px' }} />
+						Технологии: React • Ant Design • Supabase • Vercel
+					</Text>
 				</div>
 			</div>
-
-			<div className='section tech-info'>
-				<h3>Технологии</h3>
-				<p>Проект построен на современном стеке:</p>
-				<ul>
-					<li>
-						<strong>Frontend:</strong> React, Ant Design, CSS3
-					</li>
-					<li>
-						<strong>Backend:</strong> Supabase (PostgreSQL, Auth, Storage)
-					</li>
-					<li>
-						<strong>Хостинг:</strong> Vercel
-					</li>
-					<li>
-						<strong>Деплой:</strong> Непрерывное развертывание из GitHub
-					</li>
-				</ul>
-			</div>
-
-			<div className='section contact-info'>
-				<h3>Контакты</h3>
-				<p>Есть вопросы или предложения? Для связи: телеграм @titov_films</p>
-			</div>
-		</div>
+		</Card>
 	)
 }

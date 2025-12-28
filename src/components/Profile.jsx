@@ -1,37 +1,67 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+	Form,
+	Input,
+	Button,
+	Radio,
+	Card,
+	message,
+	Spin,
+	Typography,
+	Space,
+	Alert,
+} from 'antd'
+import {
+	UserOutlined,
+	SaveOutlined,
+	EyeOutlined,
+	EyeInvisibleOutlined,
+	ExperimentOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../shared/api/supabase'
 
-export default function Profile({ user, onUpdate }) {
-	const [username, setUsername] = useState('')
-	const [skiModel, setSkiModel] = useState('')
-	const [visibility, setVisibility] = useState('public') // 'anonymous', 'public'
+const { Title, Text } = Typography
+
+export default function Profile({ user, onUpdate, isMobile }) {
+	const [form] = Form.useForm()
 	const [loading, setLoading] = useState(false)
-	const [message, setMessage] = useState('')
+	const [profileLoading, setProfileLoading] = useState(true)
 
 	useEffect(() => {
 		loadProfile()
 	}, [user])
 
 	async function loadProfile() {
-		const { data } = await supabase
-			.from('profiles')
-			.select('username, ski_model, visibility_preference')
-			.eq('id', user.id)
-			.single()
+		try {
+			const { data } = await supabase
+				.from('profiles')
+				.select('username, ski_model, visibility_preference')
+				.eq('id', user.id)
+				.single()
 
-		if (data) {
-			setUsername(data.username || '')
-			setSkiModel(data.ski_model || '')
-			setVisibility(data.visibility_preference || 'public')
+			if (data) {
+				form.setFieldsValue({
+					username: data.username || '',
+					skiModel: data.ski_model || '',
+					visibility: data.visibility_preference || 'public',
+				})
+			}
+		} catch (error) {
+			console.error('Ошибка загрузки профиля:', error)
+		} finally {
+			setProfileLoading(false)
 		}
 	}
 
-	async function handleSave(e) {
-		e.preventDefault()
-		if (!username.trim()) return
+	async function handleSubmit(values) {
+		const { username, skiModel, visibility } = values
+
+		if (!username?.trim()) {
+			message.error('Введите имя')
+			return
+		}
 
 		setLoading(true)
-		setMessage('')
 
 		try {
 			const {
@@ -39,126 +69,199 @@ export default function Profile({ user, onUpdate }) {
 			} = await supabase.auth.getSession()
 			if (!session) throw new Error('Нет сессии')
 
-			const userId = session.user.id
-
-			// Обновляем профиль
-			const { error: profileError } = await supabase.from('profiles').upsert({
-				id: userId,
+			const { error } = await supabase.from('profiles').upsert({
+				id: session.user.id,
 				username: username.trim(),
-				ski_model: skiModel.trim() || null,
+				ski_model: skiModel?.trim() || null,
 				visibility_preference: visibility,
 				updated_at: new Date().toISOString(),
 			})
 
-			if (profileError) throw profileError
+			if (error) throw error
 
-			setMessage('✅ Профиль обновлен!')
+			message.success('Профиль успешно обновлен!')
 			onUpdate?.()
 		} catch (error) {
-			setMessage('❌ Ошибка: ' + error.message)
-			console.error('Ошибка:', error)
+			console.error('Ошибка сохранения:', error)
+			message.error('Ошибка: ' + error.message)
 		} finally {
 			setLoading(false)
 		}
 	}
 
 	return (
-		<div className='profile-card'>
-			<h2>Мой профиль</h2>
-			{message && <div className='message-box success'>{message}</div>}
-
-			<form onSubmit={handleSave} className='profile-form'>
-				{/* Два поля в одну строку */}
-				<div className='form-row compact-profile'>
-					<div className='input-group'>
-						<label>Имя в таблице</label>
-						<input
-							type='text'
-							value={username}
-							onChange={e => setUsername(e.target.value)}
-							placeholder='Ваше имя'
-							minLength='2'
-							required
-							disabled={loading}
-						/>
-					</div>
-
-					<div className='input-group'>
-						<label>Модель лыж (необязательно)</label>
-						<input
-							type='text'
-							value={skiModel}
-							onChange={e => setSkiModel(e.target.value)}
-							placeholder='Производитель Модель'
-							disabled={loading}
-							list='ski-brands'
-						/>
-						<datalist id='ski-brands'>
-							<option value='Fischer' />
-							<option value='Rossignol' />
-							<option value='Madshus' />
-							<option value='Salomon' />
-							<option value='Atomic' />
-							<option value='Pioneer' />
-							<option value='Tisa' />
-							<option value='Karhu' />
-							<option value='Peltonen' />
-						</datalist>
-					</div>
-				</div>
-
-				{/* Настройки видимости - 2 опции */}
-				<div className='form-group'>
-					<label>Настройки видимости</label>
-					<div className='visibility-options'>
-						<div className='visibility-option'>
-							<label className='radio-label'>
-								<input
-									type='radio'
-									name='visibility'
-									value='public'
-									checked={visibility === 'public'}
-									onChange={e => setVisibility(e.target.value)}
-									disabled={loading}
-								/>
-								<span className='radio-custom'></span>
-								<span className='option-title'>Публичное участие</span>
-							</label>
-							<div className='option-description'>
-								• Имя в общем рейтинге
-								<br />• Полная конкуренция
-							</div>
-						</div>
-
-						<div className='visibility-option'>
-							<label className='radio-label'>
-								<input
-									type='radio'
-									name='visibility'
-									value='anonymous'
-									checked={visibility === 'anonymous'}
-									onChange={e => setVisibility(e.target.value)}
-									disabled={loading}
-								/>
-								<span className='radio-custom'></span>
-								<span className='option-title'>Анонимное участие</span>
-							</label>
-							<div className='option-description'>
-								• В рейтинге как "Лыжник №Х"
-								<br />• Вижу своё место
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<button
-					type='submit'
-					className='primary-btn'
-					disabled={loading || !username.trim()}
+		<Card
+			title={
+				<Space>
+					<UserOutlined />
+					<span>Мой профиль</span>
+				</Space>
+			}
+			bordered={false}
+			style={{ width: '100%' }}
+		>
+			<Spin spinning={profileLoading}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+					disabled={loading}
 				>
-					{loading ? '💾 Сохранение...' : '💾 Сохранить'}
-				</button>
-			</form>
-		</div>
+					<Space direction='vertical' size='large' style={{ width: '100%' }}>
+						{/* Имя и модель лыж */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Имя в таблице'
+								name='username'
+								rules={[
+									{ required: true, message: 'Введите имя' },
+									{ min: 2, message: 'Минимум 2 символа' },
+								]}
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Ваше имя'
+									prefix={<UserOutlined />}
+									maxLength={30}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Модель лыж'
+								name='skiModel'
+								extra='Будет использоваться по умолчанию для новых заездов'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Производитель Модель'
+									prefix={<ExperimentOutlined />}
+									list='ski-brands'
+								/>
+								<datalist id='ski-brands'>
+									<option value='Fischer' />
+									<option value='Rossignol' />
+									<option value='Madshus' />
+									<option value='Salomon' />
+									<option value='Atomic' />
+									<option value='Pioneer' />
+									<option value='Tisa' />
+									<option value='Karhu' />
+									<option value='Peltonen' />
+									<option value='Brados' />
+								</datalist>
+							</Form.Item>
+						</div>
+
+						{/* Настройки видимости */}
+						<Form.Item label='Настройки видимости' name='visibility'>
+							<Radio.Group style={{ width: '100%' }}>
+								<Space
+									direction='vertical'
+									size='middle'
+									style={{ width: '100%' }}
+								>
+									<Card
+										size='small'
+										style={{
+											border: '1px solid #d9d9d9',
+											borderRadius: '8px',
+											cursor: 'pointer',
+										}}
+										onClick={() => form.setFieldValue('visibility', 'public')}
+									>
+										<Radio
+											value='public'
+											style={{
+												width: '100%',
+												display: 'flex',
+												alignItems: 'flex-start',
+											}}
+										>
+											<Space
+												direction='vertical'
+												size={2}
+												style={{ marginLeft: '8px' }}
+											>
+												<Space size={8}>
+													<EyeOutlined style={{ color: '#52c41a' }} />
+													<Text strong>Публичное участие</Text>
+												</Space>
+												<div style={{ marginLeft: '24px' }}>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Имя в общем рейтинге
+													</Text>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Полная конкуренция
+													</Text>
+												</div>
+											</Space>
+										</Radio>
+									</Card>
+
+									<Card
+										size='small'
+										style={{
+											border: '1px solid #d9d9d9',
+											borderRadius: '8px',
+											cursor: 'pointer',
+										}}
+										onClick={() =>
+											form.setFieldValue('visibility', 'anonymous')
+										}
+									>
+										<Radio
+											value='anonymous'
+											style={{
+												width: '100%',
+												display: 'flex',
+												alignItems: 'flex-start',
+											}}
+										>
+											<Space
+												direction='vertical'
+												size={2}
+												style={{ marginLeft: '8px' }}
+											>
+												<Space size={8}>
+													<EyeInvisibleOutlined style={{ color: '#fa8c16' }} />
+													<Text strong>Анонимное участие</Text>
+												</Space>
+												<div style={{ marginLeft: '24px' }}>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• В рейтинге как "Лыжник №Х"
+													</Text>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Вижу своё место
+													</Text>
+												</div>
+											</Space>
+										</Radio>
+									</Card>
+								</Space>
+							</Radio.Group>
+						</Form.Item>
+
+						{/* Кнопка сохранения */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={<SaveOutlined />}
+								loading={loading}
+								size='large'
+								block={isMobile}
+								style={{
+									height: '48px',
+									fontSize: '16px',
+								}}
+							>
+								Сохранить настройки
+							</Button>
+						</Form.Item>
+					</Space>
+				</Form>
+			</Spin>
+		</Card>
 	)
 }
