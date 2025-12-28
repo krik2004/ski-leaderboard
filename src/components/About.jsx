@@ -9,7 +9,7 @@ export default function About() {
 				<h3>Что это?</h3>
 				<p>
 					Лыжный Рейтинг Друзей — это платформа для сравнения результатов в
-					лыжных заездах среди друзей. Отслеживайте свои результаты, свой прогресс
+					лыжных заездах среди друзей. Отслеживайте свои результаты и прогресс!
 				</p>
 			</div>
 
@@ -19,6 +19,10 @@ export default function About() {
 					<li>
 						<strong>Добавляйте заезды</strong> — вводите время и загружайте GPX
 						треки
+					</li>
+					<li>
+						<strong>Редактируйте заезды</strong> — обновляйте время, модель лыж,
+						добавляйте GPX треки
 					</li>
 					<li>
 						<strong>Сравнивайте результаты</strong> — смотрите таблицу лидеров
@@ -51,13 +55,24 @@ export default function About() {
 				<h3>Новости проекта</h3>
 
 				<div className='news-item'>
+					<div className='news-date'>27 декабря 2025</div>
+					<div className='news-title'>Добавлено редактирование заездов</div>
+					<div className='news-content'>
+						Теперь можно редактировать свои заезды: обновлять время, модель лыж,
+						добавлять или удалять GPX треки. Для каждого заезда можно указать
+						свою модель лыж.
+					</div>
+				</div>
+
+
+				<div className='news-item'>
 					<div className='news-date'>24 декабря 2025</div>
 					<div className='news-title'>
 						Добавлены настройки конфиденциальности
 					</div>
 					<div className='news-content'>
-						Теперь можно выбрать, как показывать ваши результаты: публично,
-						анонимно
+						Теперь можно выбрать, как показывать ваши результаты: публично или
+						анонимно. В анонимном режиме вы отображаетесь как "Лыжник №X".
 					</div>
 				</div>
 
@@ -66,7 +81,8 @@ export default function About() {
 					<div className='news-title'>Загрузка GPX треков</div>
 					<div className='news-content'>
 						Добавлена возможность загружать GPX файлы для подтверждения заездов.
-						Заезды с треками отмечаются как "Подтвержденные".
+						Заезды с треками отмечаются как "Подтвержденные". Исправлена
+						загрузка файлов с кириллическими именами.
 					</div>
 				</div>
 
@@ -74,7 +90,7 @@ export default function About() {
 					<div className='news-date'>21 декабря 2025</div>
 					<div className='news-title'>Запуск проекта</div>
 					<div className='news-content'>
-						Проект успешно запущен.
+						Проект успешно запущен под названием "Лыжный Рейтинг Друзей".
 					</div>
 				</div>
 			</div>
@@ -84,7 +100,7 @@ export default function About() {
 				<p>Проект построен на современном стеке:</p>
 				<ul>
 					<li>
-						<strong>Frontend:</strong> React, CSS3
+						<strong>Frontend:</strong> React, Ant Design, CSS3
 					</li>
 					<li>
 						<strong>Backend:</strong> Supabase (PostgreSQL, Auth, Storage)
@@ -100,10 +116,7 @@ export default function About() {
 
 			<div className='section contact-info'>
 				<h3>Контакты</h3>
-				<p>
-					Есть вопросы или предложения?
-для связи: телеграм @titov_films
-				</p>
+				<p>Есть вопросы или предложения? Для связи: телеграм @titov_films</p>
 			</div>
 		</div>
 	)

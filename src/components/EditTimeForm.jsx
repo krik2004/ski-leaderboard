@@ -125,34 +125,107 @@ async function handleDeleteEntry() {
 		}
 	}
 
-	async function uploadGpxFile(file) {
-		if (!file) return null
+async function uploadGpxFile(file) {
+	if (!file) return null
 
-		setIsUploading(true)
-		try {
-			const fileName = `${Date.now()}_${time.user_id}_${file.name.replace(
-				/\s+/g,
-				'_'
-			)}`
+	setIsUploading(true)
+	try {
+		// Функция для транслитерации кириллицы в латиницу
+		function transliterate(text) {
+			const ru = {
+				а: 'a',
+				б: 'b',
+				в: 'v',
+				г: 'g',
+				д: 'd',
+				е: 'e',
+				ё: 'yo',
+				ж: 'zh',
+				з: 'z',
+				и: 'i',
+				й: 'y',
+				к: 'k',
+				л: 'l',
+				м: 'm',
+				н: 'n',
+				о: 'o',
+				п: 'p',
+				р: 'r',
+				с: 's',
+				т: 't',
+				у: 'u',
+				ф: 'f',
+				х: 'h',
+				ц: 'ts',
+				ч: 'ch',
+				ш: 'sh',
+				щ: 'shch',
+				ъ: '',
+				ы: 'y',
+				ь: '',
+				э: 'e',
+				ю: 'yu',
+				я: 'ya',
+			}
 
-			const { data, error } = await supabase.storage
-				.from('gpx-tracks')
-				.upload(fileName, file)
-
-			if (error) throw error
-
-			const {
-				data: { publicUrl },
-			} = supabase.storage.from('gpx-tracks').getPublicUrl(fileName)
-
-			return { url: publicUrl }
-		} catch (error) {
-			console.error('Ошибка загрузки GPX:', error)
-			return null
-		} finally {
-			setIsUploading(false)
+			return text
+				.toLowerCase()
+				.split('')
+				.map(char => ru[char] || char)
+				.join('')
 		}
+
+		// Получаем имя файла без расширения
+		const originalName = file.name.replace(/\.[^/.]+$/, '')
+		const transliteratedName = transliterate(originalName)
+
+		// Очищаем от спецсимволов
+		const safeName = transliteratedName
+			.replace(/[^a-zA-Z0-9]/g, '_') // оставляем только латиницу и цифры
+			.replace(/_+/g, '_') // убираем повторяющиеся _
+			.replace(/^_+|_+$/g, '') // убираем _ в начале и конце
+
+		// Получаем расширение файла
+		const fileExt = file.name.split('.').pop().toLowerCase()
+
+		// Формируем финальное имя файла с time.user_id
+		const fileName = `${Date.now()}_${time.user_id}_${
+			safeName || 'track'
+		}.${fileExt}`
+
+		// Если имя получилось пустым, используем просто track
+		const finalFileName = safeName
+			? fileName
+			: `${Date.now()}_${time.user_id}_track.${fileExt}`
+
+		console.log('EditForm: Оригинальное имя:', file.name)
+		console.log('EditForm: Транслитерированное:', transliteratedName)
+		console.log('EditForm: Безопасное имя:', safeName)
+		console.log('EditForm: Финальное имя:', finalFileName)
+
+		const { data, error } = await supabase.storage
+			.from('gpx-tracks')
+			.upload(finalFileName, file)
+
+		if (error) {
+			console.error('Ошибка Supabase при загрузке:', error)
+			throw error
+		}
+
+		const {
+			data: { publicUrl },
+		} = supabase.storage.from('gpx-tracks').getPublicUrl(finalFileName)
+
+		console.log('✅ Файл успешно загружен:', publicUrl)
+		return { url: publicUrl }
+	} catch (error) {
+		console.error('Ошибка загрузки GPX:', error)
+		alert('Ошибка загрузки файла: ' + error.message)
+		return null
+	} finally {
+		setIsUploading(false)
 	}
+}
 
 	async function handleSubmit(e) {
 		e.preventDefault()

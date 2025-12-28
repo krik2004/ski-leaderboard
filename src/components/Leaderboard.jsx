@@ -12,6 +12,7 @@ export default function Leaderboard({ times, user, onTimeUpdated }) {
 	const [editingTime, setEditingTime] = useState(null)
 	const [showEditForm, setShowEditForm] = useState(false)
 
+	const [isLoading, setIsLoading] = useState(false)
 	useEffect(() => {
 		const checkMobile = () => {
 			setIsMobile(window.innerWidth <= 768)
@@ -138,7 +139,6 @@ export default function Leaderboard({ times, user, onTimeUpdated }) {
 		setShowEditForm(true)
 	}
 
-
 	// Функция для обновления заезда
 	async function handleUpdateTime(updatedData) {
 		try {
@@ -160,24 +160,27 @@ export default function Leaderboard({ times, user, onTimeUpdated }) {
 			alert('❌ Ошибка при обновлении заезда: ' + error.message)
 		}
 	}
-async function handleDeleteTime(timeId) {
-	if (!confirm('Удалить этот заезд? Это действие нельзя отменить.')) return
+	async function handleDeleteTime(timeId) {
+		if (!confirm('Удалить этот заезд? Это действие нельзя отменить.')) return
 
-	setIsLoading(true)
-	try {
-		const { error } = await supabase.from('lap_times').delete().eq('id', timeId)
+		setIsLoading(true)
+		try {
+			const { error } = await supabase
+				.from('lap_times')
+				.delete()
+				.eq('id', timeId)
 
-		if (error) throw error
+			if (error) throw error
 
-		// Обновляем таблицу
-		await fetchTimes()
-	} catch (error) {
-		console.error('Ошибка удаления:', error)
-		alert('Ошибка при удалении заезда')
-	} finally {
-		setIsLoading(false)
+			// Обновляем таблицу
+			await fetchTimes()
+		} catch (error) {
+			console.error('Ошибка удаления:', error)
+			alert('Ошибка при удалении заезда')
+		} finally {
+			setIsLoading(false)
+		}
 	}
-}
 	return (
 		<div className='leaderboard-card'>
 			<h4>🏆 Таблица заездов ЛБК Ангарский (малый, освещенный круг 2,5км)</h4>
@@ -283,7 +286,10 @@ async function handleDeleteTime(timeId) {
 
 												{isCurrentUser && (
 													<button
-														onClick={() => setEditingTime(time)}
+														onClick={() => {
+															setEditingTime(time)
+															setShowEditForm(true)
+														}}
 														className='edit-btn'
 														title='Редактировать'
 													>
@@ -352,7 +358,10 @@ async function handleDeleteTime(timeId) {
 					time={editingTime}
 					onUpdate={handleUpdateTime}
 					onDelete={handleDeleteTime}
-					onClose={() => setEditingTime(null)}
+					onClose={() => {
+						setEditingTime(null)
+						setShowEditForm(false)
+					}}
 				/>
 			)}
 		</div>

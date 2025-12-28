@@ -9,10 +9,12 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "antd": "^6.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
-    "@supabase/supabase-js": "^2.39.0"
+    "react-scripts": "5.0.1"
   },
   "browserslist": {
     "production": [
