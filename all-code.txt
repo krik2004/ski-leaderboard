@@ -1,0 +1,6124 @@
+## 📄 src/features/auth/ui/Auth.module.css
+```
+/* Стили для страницы аутентификации */
+
+.authPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  background: white;
+}
+
+.authHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.authIcon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.authTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.authSubtitle {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.authForm {
+  width: 100%;
+}
+
+.authToggle {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.authToggleButton {
+  padding: 0;
+  height: auto;
+}
+
+.authInfo {
+  margin-top: 24px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .authPage {
+    padding: 16px;
+  }
+  
+  .authCard {
+    padding: 20px !important;
+  }
+  
+  .authIcon {
+    font-size: 40px;
+  }
+  
+  .authTitle {
+    font-size: 20px;
+  }
+}```
+
+## 📄 src/features/auth/ui/index.js
+```
+export { default as Auth } from './ui/Auth'```
+
+## 📄 src/features/auth/ui/Auth.jsx
+```
+import React, { useState } from 'react'
+import {
+	Form,
+	Input,
+	Button,
+	Card,
+	Typography,
+	Alert,
+	Space,
+	Divider,
+	Spin,
+} from 'antd'
+import {
+	UserOutlined,
+	LockOutlined,
+	LoginOutlined,
+	UserAddOutlined,
+	TrophyOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+import styles from './Auth.module.css' // ← Импорт стилей из той же папки
+
+const { Title, Text, Paragraph } = Typography
+
+export default function Auth({ onLoginSuccess }) {
+	const [form] = Form.useForm()
+	const [loading, setLoading] = useState(false)
+	const [message, setMessage] = useState({ type: '', text: '' })
+	const [isLogin, setIsLogin] = useState(true)
+
+	const handleAuth = async values => {
+		const { email, password } = values
+		setLoading(true)
+		setMessage({ type: '', text: '' })
+
+		try {
+			if (isLogin) {
+				// Вход
+				const { data, error } = await supabase.auth.signInWithPassword({
+					email,
+					password,
+				})
+
+				if (error) throw error
+
+				onLoginSuccess(data.user)
+				setMessage({
+					type: 'success',
+					text: '✅ Вход выполнен успешно!',
+				})
+			} else {
+				// Регистрация
+				const { data, error } = await supabase.auth.signUp({
+					email,
+					password,
+					options: {
+						data: {
+							username: email.split('@')[0],
+						},
+					},
+				})
+
+				if (error) throw error
+
+				if (data.user) {
+					// Создаем профиль с уникальным именем
+					const username =
+						email.split('@')[0] + Math.floor(Math.random() * 1000)
+
+					await supabase.from('profiles').upsert({
+						id: data.user.id,
+						username: username,
+						visibility_preference: 'public',
+						created_at: new Date().toISOString(),
+						updated_at: new Date().toISOString(),
+					})
+				}
+
+				setMessage({
+					type: 'success',
+					text: '✅ Регистрация успешна! Проверьте email для подтверждения и войдите в систему.',
+				})
+				setIsLogin(true)
+				form.resetFields()
+			}
+		} catch (error) {
+			console.error('Ошибка аутентификации:', error)
+			setMessage({
+				type: 'error',
+				text: `❌ Ошибка: ${error.message}`,
+			})
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	return (
+		<div className={styles.authPage}>
+			<Card className={styles.authCard} bordered={false}>
+				<div className={styles.authHeader}>
+					<TrophyOutlined className={styles.authIcon} />
+					<Title level={2} className={styles.authTitle}>
+						🎿 Лыжный Рейтинг
+					</Title>
+					<Text className={styles.authSubtitle}>
+						{isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
+					</Text>
+				</div>
+
+				{/* Сообщения */}
+				{message.text && (
+					<Alert
+						message={message.text}
+						type={message.type === 'success' ? 'success' : 'error'}
+						showIcon
+						closable
+						onClose={() => setMessage({ type: '', text: '' })}
+						style={{ marginBottom: '24px' }}
+					/>
+				)}
+
+				{/* Форма */}
+				<Spin spinning={loading}>
+					<Form
+						form={form}
+						layout='vertical'
+						onFinish={handleAuth}
+						size='large'
+						className={styles.authForm}
+					>
+						<Form.Item
+							name='email'
+							rules={[
+								{ required: true, message: 'Введите email' },
+								{ type: 'email', message: 'Введите корректный email' },
+							]}
+						>
+							<Input
+								prefix={<UserOutlined />}
+								placeholder='Email'
+								disabled={loading}
+							/>
+						</Form.Item>
+
+						<Form.Item
+							name='password'
+							rules={[
+								{ required: true, message: 'Введите пароль' },
+								{ min: 6, message: 'Пароль должен быть не менее 6 символов' },
+							]}
+						>
+							<Input.Password
+								prefix={<LockOutlined />}
+								placeholder='Пароль'
+								disabled={loading}
+							/>
+						</Form.Item>
+
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={isLogin ? <LoginOutlined /> : <UserAddOutlined />}
+								loading={loading}
+								block
+								size='large'
+								style={{
+									height: '48px',
+									fontSize: '16px',
+									marginTop: '8px',
+								}}
+							>
+								{isLogin ? 'Войти' : 'Зарегистрироваться'}
+							</Button>
+						</Form.Item>
+					</Form>
+				</Spin>
+
+				<Divider style={{ margin: '16px 0' }}>
+					<Text type='secondary'>или</Text>
+				</Divider>
+
+				{/* Переключение между входом и регистрацией */}
+				<div className={styles.authToggle}>
+					<Button
+						type='link'
+						onClick={() => {
+							setIsLogin(!isLogin)
+							form.resetFields()
+							setMessage({ type: '', text: '' })
+						}}
+						disabled={loading}
+						className={styles.authToggleButton}
+					>
+						{isLogin
+							? 'Нет аккаунта? Зарегистрируйтесь'
+							: 'Уже есть аккаунт? Войдите'}
+					</Button>
+				</div>
+
+				{/* Дополнительная информация */}
+				<Alert
+					message='Информация'
+					description={
+						<Space direction='vertical' size={2}>
+							<Text type='secondary'>
+								• Для регистрации нужен только email и пароль
+							</Text>
+							<Text type='secondary'>
+								• После регистрации проверьте email для подтверждения
+							</Text>
+							<Text type='secondary'>
+								• Имя пользователя можно изменить в профиле
+							</Text>
+						</Space>
+					}
+					type='info'
+					showIcon
+					className={styles.authInfo}
+				/>
+			</Card>
+		</div>
+	)
+}
+```
+
+## 📄 src/features/auth/index.js
+```
+export { default as Auth } from "./ui/Auth"
+```
+
+## 📄 src/features/profile/ui/Profile.jsx
+```
+import React, { useState, useEffect } from 'react'
+import {
+	Form,
+	Input,
+	Button,
+	Radio,
+	Card,
+	message,
+	Spin,
+	Typography,
+	Space,
+	Alert,
+} from 'antd'
+import {
+	UserOutlined,
+	SaveOutlined,
+	EyeOutlined,
+	EyeInvisibleOutlined,
+	ExperimentOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+
+const { Title, Text } = Typography
+
+export default function Profile({ user, onUpdate, isMobile }) {
+	const [form] = Form.useForm()
+	const [loading, setLoading] = useState(false)
+	const [profileLoading, setProfileLoading] = useState(true)
+
+	useEffect(() => {
+		loadProfile()
+	}, [user])
+
+	async function loadProfile() {
+		try {
+			const { data } = await supabase
+				.from('profiles')
+				.select('username, ski_model, visibility_preference')
+				.eq('id', user.id)
+				.single()
+
+			if (data) {
+				form.setFieldsValue({
+					username: data.username || '',
+					skiModel: data.ski_model || '',
+					visibility: data.visibility_preference || 'public',
+				})
+			}
+		} catch (error) {
+			console.error('Ошибка загрузки профиля:', error)
+		} finally {
+			setProfileLoading(false)
+		}
+	}
+
+	async function handleSubmit(values) {
+		const { username, skiModel, visibility } = values
+
+		if (!username?.trim()) {
+			message.error('Введите имя')
+			return
+		}
+
+		setLoading(true)
+
+		try {
+			const {
+				data: { session },
+			} = await supabase.auth.getSession()
+			if (!session) throw new Error('Нет сессии')
+
+			const { error } = await supabase.from('profiles').upsert({
+				id: session.user.id,
+				username: username.trim(),
+				ski_model: skiModel?.trim() || null,
+				visibility_preference: visibility,
+				updated_at: new Date().toISOString(),
+			})
+
+			if (error) throw error
+
+			message.success('Профиль успешно обновлен!')
+			onUpdate?.()
+		} catch (error) {
+			console.error('Ошибка сохранения:', error)
+			message.error('Ошибка: ' + error.message)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	return (
+		<Card
+			title={
+				<Space>
+					<UserOutlined />
+					<span>Мой профиль</span>
+				</Space>
+			}
+			bordered={false}
+			style={{ width: '100%' }}
+		>
+			<Spin spinning={profileLoading}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+					disabled={loading}
+				>
+					<Space direction='vertical' size='large' style={{ width: '100%' }}>
+						{/* Имя и модель лыж */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Имя в таблице'
+								name='username'
+								rules={[
+									{ required: true, message: 'Введите имя' },
+									{ min: 2, message: 'Минимум 2 символа' },
+								]}
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Ваше имя'
+									prefix={<UserOutlined />}
+									maxLength={30}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Модель лыж'
+								name='skiModel'
+								extra='Будет использоваться по умолчанию для новых заездов'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Производитель Модель'
+									prefix={<ExperimentOutlined />}
+									list='ski-brands'
+								/>
+								<datalist id='ski-brands'>
+									<option value='Fischer' />
+									<option value='Rossignol' />
+									<option value='Madshus' />
+									<option value='Salomon' />
+									<option value='Atomic' />
+									<option value='Pioneer' />
+									<option value='Tisa' />
+									<option value='Karhu' />
+									<option value='Peltonen' />
+									<option value='Brados' />
+								</datalist>
+							</Form.Item>
+						</div>
+
+						{/* Настройки видимости */}
+						<Form.Item label='Настройки видимости' name='visibility'>
+							<Radio.Group style={{ width: '100%' }}>
+								<Space
+									direction='vertical'
+									size='middle'
+									style={{ width: '100%' }}
+								>
+									<Card
+										size='small'
+										style={{
+											border: '1px solid #d9d9d9',
+											borderRadius: '8px',
+											cursor: 'pointer',
+										}}
+										onClick={() => form.setFieldValue('visibility', 'public')}
+									>
+										<Radio
+											value='public'
+											style={{
+												width: '100%',
+												display: 'flex',
+												alignItems: 'flex-start',
+											}}
+										>
+											<Space
+												direction='vertical'
+												size={2}
+												style={{ marginLeft: '8px' }}
+											>
+												<Space size={8}>
+													<EyeOutlined style={{ color: '#52c41a' }} />
+													<Text strong>Публичное участие</Text>
+												</Space>
+												<div style={{ marginLeft: '24px' }}>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Имя в общем рейтинге
+													</Text>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Полная конкуренция
+													</Text>
+												</div>
+											</Space>
+										</Radio>
+									</Card>
+
+									<Card
+										size='small'
+										style={{
+											border: '1px solid #d9d9d9',
+											borderRadius: '8px',
+											cursor: 'pointer',
+										}}
+										onClick={() =>
+											form.setFieldValue('visibility', 'anonymous')
+										}
+									>
+										<Radio
+											value='anonymous'
+											style={{
+												width: '100%',
+												display: 'flex',
+												alignItems: 'flex-start',
+											}}
+										>
+											<Space
+												direction='vertical'
+												size={2}
+												style={{ marginLeft: '8px' }}
+											>
+												<Space size={8}>
+													<EyeInvisibleOutlined style={{ color: '#fa8c16' }} />
+													<Text strong>Анонимное участие</Text>
+												</Space>
+												<div style={{ marginLeft: '24px' }}>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• В рейтинге как "Лыжник №Х"
+													</Text>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Вижу своё место
+													</Text>
+												</div>
+											</Space>
+										</Radio>
+									</Card>
+								</Space>
+							</Radio.Group>
+						</Form.Item>
+
+						{/* Кнопка сохранения */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={<SaveOutlined />}
+								loading={loading}
+								size='large'
+								block={isMobile}
+								style={{
+									height: '48px',
+									fontSize: '16px',
+								}}
+							>
+								Сохранить настройки
+							</Button>
+						</Form.Item>
+					</Space>
+				</Form>
+			</Spin>
+		</Card>
+	)
+}
+```
+
+## 📄 src/features/profile/ui/Profile.module.css
+```
+/* Стили для компонента Profile */
+.profileContainer {
+  width: 100%;
+}
+```
+
+## 📄 src/features/profile/index.js
+```
+export { default as Profile } from "./ui/Profile"
+```
+
+## 📄 src/features/lap-times/ui/AddTimeForm.jsx
+```
+import React, { useState, useEffect } from 'react'
+import {
+	Form,
+	Input,
+	InputNumber,
+	DatePicker,
+	Button,
+	Upload,
+	message,
+	Spin,
+	Alert,
+	Typography,
+	Space,
+	Card,
+} from 'antd'
+import {
+	UploadOutlined,
+	PlusOutlined,
+	CheckCircleOutlined,
+	FileTextOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+import dayjs from 'dayjs'
+
+const { TextArea } = Input
+const { Text } = Typography
+
+export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
+	const [form] = Form.useForm()
+	const [uploading, setUploading] = useState(false)
+	const [loading, setLoading] = useState(false)
+	const [fileList, setFileList] = useState([])
+	const [userProfile, setUserProfile] = useState(null)
+	const [autoFilledSkiModel, setAutoFilledSkiModel] = useState('')
+
+	// Устанавливаем текущую дату по умолчанию и загружаем профиль
+	useEffect(() => {
+		// Устанавливаем текущую дату
+		form.setFieldsValue({
+			date: dayjs(),
+		})
+
+		// Загружаем профиль пользователя для авто-заполнения модели лыж
+		async function loadUserProfile() {
+			if (user) {
+				const { data } = await supabase
+					.from('profiles')
+					.select('ski_model')
+					.eq('id', user.id)
+					.single()
+
+				if (data?.ski_model) {
+					setAutoFilledSkiModel(data.ski_model)
+					form.setFieldsValue({
+						skiModel: data.ski_model,
+					})
+				}
+			}
+		}
+
+		loadUserProfile()
+	}, [user, form])
+
+	// Функция для транслитерации
+	const transliterate = text => {
+		const ru = {
+			а: 'a',
+			б: 'b',
+			в: 'v',
+			г: 'g',
+			д: 'd',
+			е: 'e',
+			ё: 'yo',
+			ж: 'zh',
+			з: 'z',
+			и: 'i',
+			й: 'y',
+			к: 'k',
+			л: 'l',
+			м: 'm',
+			н: 'n',
+			о: 'o',
+			п: 'p',
+			р: 'r',
+			с: 's',
+			т: 't',
+			у: 'u',
+			ф: 'f',
+			х: 'h',
+			ц: 'ts',
+			ч: 'ch',
+			ш: 'sh',
+			щ: 'shch',
+			ъ: '',
+			ы: 'y',
+			ь: '',
+			э: 'e',
+			ю: 'yu',
+			я: 'ya',
+		}
+
+		return text
+			.toLowerCase()
+			.split('')
+			.map(char => ru[char] || char)
+			.join('')
+	}
+
+	// Загрузка GPX файла
+	const uploadGpxFile = async file => {
+		setUploading(true)
+		try {
+			const originalName = file.name.replace(/\.[^/.]+$/, '')
+			const transliteratedName = transliterate(originalName)
+			const safeName = transliteratedName
+				.replace(/[^a-zA-Z0-9]/g, '_')
+				.replace(/_+/g, '_')
+				.replace(/^_+|_+$/g, '')
+
+			const fileExt = file.name.split('.').pop().toLowerCase()
+			const fileName = `${Date.now()}_${user.id}_${
+				safeName || 'track'
+			}.${fileExt}`
+			const finalFileName = safeName
+				? fileName
+				: `${Date.now()}_${user.id}_track.${fileExt}`
+
+			const { error } = await supabase.storage
+				.from('gpx-tracks')
+				.upload(finalFileName, file)
+
+			if (error) {
+				console.error('Ошибка Supabase при загрузке:', error)
+				throw error
+			}
+
+			const {
+				data: { publicUrl },
+			} = supabase.storage.from('gpx-tracks').getPublicUrl(finalFileName)
+
+			return { url: publicUrl }
+		} catch (error) {
+			console.error('Ошибка загрузки GPX:', error)
+			message.error('Ошибка загрузки файла: ' + error.message)
+			return null
+		} finally {
+			setUploading(false)
+		}
+	}
+
+	// Обработчик отправки формы
+	const handleSubmit = async values => {
+		const { minutes, seconds, date, skiModel, comment } = values
+
+		const totalSeconds = (minutes || 0) * 60 + (seconds || 0)
+
+		if (totalSeconds <= 0) {
+			message.error('Время должно быть больше 0 секунд')
+			return
+		}
+
+		setLoading(true)
+
+		try {
+			let gpxData = null
+			if (fileList.length > 0) {
+				gpxData = await uploadGpxFile(fileList[0])
+			}
+
+			const dateTime = date ? date.toISOString() : new Date().toISOString()
+
+			const { error } = await supabase.from('lap_times').insert({
+				user_id: user.id,
+				time_seconds: totalSeconds,
+				comment: comment?.trim() || null,
+				ski_model: skiModel?.trim() || null,
+				gpx_track_url: gpxData?.url || null,
+				verified: !!gpxData,
+				date: dateTime,
+				user_name: user.email.split('@')[0],
+			})
+
+			if (error) throw error
+
+			// Успешное добавление
+			message.success(
+				gpxData ? 'Заезд добавлен с подтверждением!' : 'Заезд добавлен!',
+				3
+			)
+
+			// Сброс формы
+			form.resetFields()
+			setFileList([])
+
+			// Восстанавливаем авто-заполненную модель лыж
+			if (autoFilledSkiModel) {
+				form.setFieldsValue({
+					skiModel: autoFilledSkiModel,
+				})
+			}
+
+			// Устанавливаем текущую дату
+			form.setFieldsValue({
+				date: dayjs(),
+			})
+
+			onTimeAdded?.()
+		} catch (error) {
+			console.error('Ошибка добавления заезда:', error)
+			message.error('Ошибка: ' + error.message)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	// Настройки загрузки файлов
+	const uploadProps = {
+		onRemove: () => {
+			setFileList([])
+		},
+		beforeUpload: file => {
+			if (!file.name.endsWith('.gpx')) {
+				message.error('Пожалуйста, выберите GPX файл')
+				return Upload.LIST_IMPORT
+			}
+			setFileList([file])
+			return false
+		},
+		fileList,
+		maxCount: 1,
+		accept: '.gpx',
+	}
+
+	return (
+		<Card
+			title={
+				<Space>
+					<PlusOutlined />
+					<span>Добавить новый заезд</span>
+				</Space>
+			}
+			bordered={false}
+			style={{ width: '100%' }}
+		>
+			<Spin spinning={loading || uploading}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+					disabled={loading || uploading}
+				>
+					<Space direction='vertical' size='middle' style={{ width: '100%' }}>
+						{/* Дата и время */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Дата заезда'
+								name='date'
+								rules={[{ required: true, message: 'Выберите дату' }]}
+								style={{ flex: 1, minWidth: '150px' }}
+							>
+								<DatePicker
+									format='DD.MM.YYYY'
+									style={{ width: '100%' }}
+									disabledDate={current =>
+										current && current > dayjs().endOf('day')
+									}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Минуты'
+								name='minutes'
+								rules={[
+									{ required: true, message: 'Введите минуты' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Секунды'
+								name='seconds'
+								rules={[
+									{ required: true, message: 'Введите секунды' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+						</div>
+
+						{/* Модель лыж */}
+						<Form.Item
+							label='Модель лыж'
+							name='skiModel'
+							extra={
+								autoFilledSkiModel
+									? 'Модель из вашего профиля. Можете изменить для этого заезда.'
+									: 'Укажите модель лыж для этого заезда'
+							}
+						>
+							<Input
+								placeholder='Например: Fischer Speedmax'
+								list='ski-models'
+							/>
+							<datalist id='ski-models'>
+								<option value='Brados' />
+								<option value='Fischer' />
+								<option value='Rossignol' />
+								<option value='Madshus' />
+								<option value='Salomon' />
+								<option value='Atomic' />
+								<option value='Tisa' />
+							</datalist>
+						</Form.Item>
+
+						{/* GPX трек и комментарий */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='GPX трек (необязательно)'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Space
+									direction='vertical'
+									size='small'
+									style={{ width: '100%' }}
+								>
+									<Upload {...uploadProps}>
+										<Button icon={<UploadOutlined />}>
+											{fileList.length > 0
+												? fileList[0].name
+												: 'Выберите GPX файл'}
+										</Button>
+									</Upload>
+
+									<Text type='secondary'>
+										{uploading
+											? 'Загрузка файла...'
+											: 'Загрузите трек для подтверждения заезда'}
+									</Text>
+								</Space>
+							</Form.Item>
+
+							<Form.Item
+								label='Комментарий'
+								name='comment'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Погода, состояние трассы...'
+									maxLength={100}
+								/>
+							</Form.Item>
+						</div>
+
+						{/* Информация о подтверждении */}
+						{fileList.length > 0 && (
+							<Alert
+								message='Подтверждение заезда'
+								description="Этот заезд будет отмечен как 'Подтвержденный' после загрузки GPX трека."
+								type='success'
+								showIcon
+								icon={<CheckCircleOutlined />}
+							/>
+						)}
+
+						{/* Кнопка отправки */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={<PlusOutlined />}
+								loading={loading}
+								disabled={uploading}
+								size='large'
+								block={isMobile}
+								style={{
+									backgroundColor: '#52c41a',
+									borderColor: '#52c41a',
+									height: '48px',
+									fontSize: '16px',
+								}}
+							>
+								{uploading
+									? 'Загрузка трека...'
+									: loading
+									? 'Добавление...'
+									: '🎿 Добавить заезд'}
+							</Button>
+						</Form.Item>
+
+						{/* Подсказки */}
+						<Alert
+							message='Подсказки'
+							description={
+								<Space
+									direction='vertical'
+									size='small'
+									style={{ width: '100%' }}
+								>
+									<Text type='secondary'>
+										• GPX файлы подтверждают заезд и добавляют статус
+										"Подтвержденный"
+									</Text>
+									<Text type='secondary'>
+										• Модель лыж можно указать для каждого заезда отдельно
+									</Text>
+									<Text type='secondary'>
+										• Комментарий помогает запомнить условия заезда
+									</Text>
+								</Space>
+							}
+							type='info'
+							showIcon
+						/>
+					</Space>
+				</Form>
+			</Spin>
+		</Card>
+	)
+}
+```
+
+## 📄 src/features/lap-times/ui/EditTimeForm.jsx
+```
+import React, { useState, useEffect } from 'react'
+import {
+	Modal,
+	Form,
+	Input,
+	InputNumber,
+	DatePicker,
+	Button,
+	Upload,
+	message,
+	Spin,
+	Alert,
+	Typography,
+	Space,
+	Popconfirm,
+} from 'antd'
+import {
+	UploadOutlined,
+	DeleteOutlined,
+	CloseOutlined,
+	SaveOutlined,
+	FileTextOutlined,
+	EyeOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase' 
+import dayjs from 'dayjs'
+
+const { TextArea } = Input
+const { Text } = Typography
+
+export default function EditTimeForm({ time, onUpdate, onClose, onDelete }) {
+	const [form] = Form.useForm()
+	const [loading, setLoading] = useState(false)
+	const [uploading, setUploading] = useState(false)
+	const [deletingFile, setDeletingFile] = useState(false)
+	const [fileList, setFileList] = useState([])
+	const [gpxData, setGpxData] = useState(null)
+
+	// Инициализация формы данными заезда
+	useEffect(() => {
+		if (time) {
+			const totalSeconds = time.time_seconds
+			const mins = Math.floor(totalSeconds / 60)
+			const secs = totalSeconds % 60
+
+			form.setFieldsValue({
+				minutes: mins,
+				seconds: secs,
+				date: time.date ? dayjs(time.date) : dayjs(),
+				skiModel: time.ski_model || '',
+				comment: time.comment || '',
+			})
+
+			if (time.gpx_track_url) {
+				setGpxData({
+					url: time.gpx_track_url,
+					name: time.gpx_track_url.split('/').pop(),
+				})
+			}
+		}
+	}, [time, form])
+
+	// Функция для транслитерации
+	const transliterate = text => {
+		const ru = {
+			а: 'a',
+			б: 'b',
+			в: 'v',
+			г: 'g',
+			д: 'd',
+			е: 'e',
+			ё: 'yo',
+			ж: 'zh',
+			з: 'z',
+			и: 'i',
+			й: 'y',
+			к: 'k',
+			л: 'l',
+			м: 'm',
+			н: 'n',
+			о: 'o',
+			п: 'p',
+			р: 'r',
+			с: 's',
+			т: 't',
+			у: 'u',
+			ф: 'f',
+			х: 'h',
+			ц: 'ts',
+			ч: 'ch',
+			ш: 'sh',
+			щ: 'shch',
+			ъ: '',
+			ы: 'y',
+			ь: '',
+			э: 'e',
+			ю: 'yu',
+			я: 'ya',
+		}
+
+		return text
+			.toLowerCase()
+			.split('')
+			.map(char => ru[char] || char)
+			.join('')
+	}
+
+	// Загрузка GPX файла
+	const uploadGpxFile = async file => {
+		setUploading(true)
+		try {
+			const originalName = file.name.replace(/\.[^/.]+$/, '')
+			const transliteratedName = transliterate(originalName)
+			const safeName = transliteratedName
+				.replace(/[^a-zA-Z0-9]/g, '_')
+				.replace(/_+/g, '_')
+				.replace(/^_+|_+$/g, '')
+
+			const fileExt = file.name.split('.').pop().toLowerCase()
+			const fileName = `${Date.now()}_${time.user_id}_${
+				safeName || 'track'
+			}.${fileExt}`
+			const finalFileName = safeName
+				? fileName
+				: `${Date.now()}_${time.user_id}_track.${fileExt}`
+
+			const { error } = await supabase.storage
+				.from('gpx-tracks')
+				.upload(finalFileName, file)
+
+			if (error) throw error
+
+			const {
+				data: { publicUrl },
+			} = supabase.storage.from('gpx-tracks').getPublicUrl(finalFileName)
+
+			return { url: publicUrl, name: file.name }
+		} catch (error) {
+			console.error('Ошибка загрузки GPX:', error)
+			message.error('Ошибка загрузки файла: ' + error.message)
+			return null
+		} finally {
+			setUploading(false)
+		}
+	}
+
+	// Удаление GPX файла
+	const deleteGpxFile = async () => {
+		if (!time.gpx_track_url) return true
+
+		setDeletingFile(true)
+		try {
+			const fileName = time.gpx_track_url.split('/').pop()
+			const { error } = await supabase.storage
+				.from('gpx-tracks')
+				.remove([fileName])
+
+			if (error) throw error
+			return true
+		} catch (error) {
+			console.error('Ошибка удаления GPX:', error)
+			message.error('Ошибка при удалении трека: ' + error.message)
+			return false
+		} finally {
+			setDeletingFile(false)
+		}
+	}
+
+	// Обработчик отправки формы
+	const handleSubmit = async values => {
+		const { minutes, seconds, date, skiModel, comment } = values
+
+		const totalSeconds = (minutes || 0) * 60 + (seconds || 0)
+
+		if (totalSeconds <= 0) {
+			message.error('Время должно быть больше 0 секунд')
+			return
+		}
+
+		setLoading(true)
+
+		try {
+			let newGpxData = null
+			if (fileList.length > 0) {
+				// Если загружается новый файл и есть старый - удаляем старый
+				if (time.gpx_track_url) {
+					await deleteGpxFile()
+				}
+				newGpxData = await uploadGpxFile(fileList[0])
+			}
+
+			// Формируем обновленные данные
+			const updatedData = {
+				time_seconds: totalSeconds,
+				comment: comment?.trim() || null,
+				ski_model: skiModel?.trim() || null,
+				date: date ? date.toISOString() : time.date,
+				updated_at: new Date().toISOString(),
+			}
+
+			// Если загружен новый GPX файл
+			if (newGpxData) {
+				updatedData.gpx_track_url = newGpxData.url
+				updatedData.verified = true
+			} else if (!time.gpx_track_url) {
+				// Если не было трека и не загружен новый
+				updatedData.gpx_track_url = null
+				updatedData.verified = false
+			}
+
+			// Вызываем callback
+			await onUpdate(updatedData)
+
+			message.success('Заезд успешно обновлен!')
+			setTimeout(() => {
+				onClose()
+			}, 1500)
+		} catch (error) {
+			message.error('Ошибка: ' + error.message)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	// Обработчик удаления заезда
+	const handleDeleteEntry = async () => {
+		try {
+			if (time.gpx_track_url) {
+				await deleteGpxFile()
+			}
+			await onDelete(time.id)
+			message.success('Заезд удален')
+			onClose()
+		} catch (error) {
+			message.error('Ошибка при удалении: ' + error.message)
+		}
+	}
+
+	// Настройки загрузки файлов
+	const uploadProps = {
+		onRemove: () => {
+			setFileList([])
+		},
+		beforeUpload: file => {
+			if (!file.name.endsWith('.gpx')) {
+				message.error('Пожалуйста, выберите GPX файл')
+				return Upload.LIST_IMPORT
+			}
+			setFileList([file])
+			return false
+		},
+		fileList,
+		maxCount: 1,
+		accept: '.gpx',
+	}
+
+	if (!time) return null
+
+	return (
+		<Modal
+			title={<span style={{ fontSize: '18px' }}>✏️ Редактировать заезд</span>}
+			open={true}
+			onCancel={onClose}
+			footer={null}
+			width={600}
+			centered
+			maskClosable={false}
+			destroyOnClose
+		>
+			<Spin spinning={loading || uploading || deletingFile}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+				>
+					<Space direction='vertical' size='middle' style={{ width: '100%' }}>
+						{/* Дата и время */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Дата заезда'
+								name='date'
+								rules={[{ required: true, message: 'Выберите дату' }]}
+								style={{ flex: 1, minWidth: '150px' }}
+							>
+								<DatePicker
+									format='DD.MM.YYYY'
+									style={{ width: '100%' }}
+									disabledDate={current =>
+										current && current > dayjs().endOf('day')
+									}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Минуты'
+								name='minutes'
+								rules={[
+									{ required: true, message: 'Введите минуты' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Секунды'
+								name='seconds'
+								rules={[
+									{ required: true, message: 'Введите секунды' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+						</div>
+
+						{/* Модель лыж */}
+						<Form.Item
+							label='Модель лыж'
+							name='skiModel'
+							extra='Например: Fischer Speedmax'
+						>
+							<Input placeholder='Производитель Модель' list='ski-brands' />
+							<datalist id='ski-brands'>
+								<option value='Brados' />
+								<option value='Fischer' />
+								<option value='Rossignol' />
+								<option value='Madshus' />
+								<option value='Salomon' />
+								<option value='Atomic' />
+								<option value='Tisa' />
+							</datalist>
+						</Form.Item>
+
+						{/* GPX трек */}
+						<Form.Item label='GPX трек'>
+							<Space
+								direction='vertical'
+								size='small'
+								style={{ width: '100%' }}
+							>
+								{gpxData && (
+									<Alert
+										message='Текущий трек'
+										description={
+											<Space>
+												<Text type='secondary'>{gpxData.name}</Text>
+												<Button
+													type='link'
+													icon={<EyeOutlined />}
+													href={gpxData.url}
+													target='_blank'
+													size='small'
+												>
+													Просмотреть
+												</Button>
+												<Popconfirm
+													title='Удалить GPX трек?'
+													description='Это действие нельзя отменить.'
+													onConfirm={async () => {
+														const success = await deleteGpxFile()
+														if (success) {
+															setGpxData(null)
+															message.success('Трек удален')
+														}
+													}}
+													okText='Да, удалить'
+													cancelText='Отмена'
+												>
+													<Button
+														type='link'
+														icon={<DeleteOutlined />}
+														danger
+														size='small'
+														loading={deletingFile}
+													>
+														Удалить
+													</Button>
+												</Popconfirm>
+											</Space>
+										}
+										type='info'
+										showIcon
+										style={{ width: '100%' }}
+									/>
+								)}
+
+								<Upload {...uploadProps}>
+									<Button icon={<UploadOutlined />}>
+										{fileList.length > 0
+											? fileList[0].name
+											: 'Загрузить новый GPX'}
+									</Button>
+								</Upload>
+
+								<Text type='secondary'>
+									{uploading
+										? 'Загрузка файла...'
+										: 'Загрузите новый трек для подтверждения'}
+								</Text>
+							</Space>
+						</Form.Item>
+
+						{/* Комментарий */}
+						<Form.Item label='Комментарий' name='comment'>
+							<TextArea
+								placeholder='Погода, состояние трассы...'
+								rows={3}
+								maxLength={200}
+								showCount
+							/>
+						</Form.Item>
+
+						{/* Кнопки действий */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Space style={{ width: '100%', justifyContent: 'space-between' }}>
+								<Space>
+									<Button
+										onClick={onClose}
+										icon={<CloseOutlined />}
+										disabled={loading || uploading || deletingFile}
+									>
+										Отмена
+									</Button>
+
+									<Popconfirm
+										title='Удалить заезд?'
+										description='Это действие нельзя отменить. Удалить заезд полностью?'
+										onConfirm={handleDeleteEntry}
+										okText='Да, удалить'
+										cancelText='Отмена'
+										okType='danger'
+									>
+										<Button
+											danger
+											icon={<DeleteOutlined />}
+											disabled={loading || uploading || deletingFile}
+										>
+											Удалить заезд
+										</Button>
+									</Popconfirm>
+								</Space>
+
+								<Button
+									type='primary'
+									htmlType='submit'
+									icon={<SaveOutlined />}
+									loading={loading}
+									disabled={uploading || deletingFile}
+								>
+									Сохранить
+								</Button>
+							</Space>
+						</Form.Item>
+					</Space>
+				</Form>
+			</Spin>
+		</Modal>
+	)
+}
+```
+
+## 📄 src/features/lap-times/ui/AddTimeForm.module.css
+```
+/* Стили для формы добавления заезда */
+.addFormContainer {
+  width: 100%;
+}
+```
+
+## 📄 src/features/lap-times/index.js
+```
+export { default as AddTimeForm } from "./ui/AddTimeForm"
+export { default as EditTimeForm } from "./ui/EditTimeForm"
+```
+
+## 📄 src/index.js
+```
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+
+
+import App from './App'
+
+const root = ReactDOM.createRoot(document.getElementById('root'))
+root.render(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>
+)
+```
+
+## 📄 src/supabase.js
+```
+import { createClient } from '@supabase/supabase-js'
+
+// ВАЖНО: Замените эти значения на свои!
+const supabaseUrl = 'https://xsqelqxwthjufdwfdecf.supabase.co'
+const supabaseKey = 'sb_publishable_XTAAbOUtNz-UyekvCQMB-A_dzlGjS1O'
+
+// Создаем клиент Supabase
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+export default supabase
+```
+
+## 📄 src/shared/api/supabase.js
+```
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://xsqelqxwthjufdwfdecf.supabase.co'
+const supabaseKey =
+	process.env.REACT_APP_SUPABASE_ANON_KEY ||
+	'sb_publishable_XTAAbOUtNz-UyekvCQMB-A_dzlGjS1O'
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+```
+
+## 📄 src/styles/App.css
+```
+/* Основные стили приложения */
+
+/* Глобальные переменные */
+:root {
+  --primary-color: #1890ff;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --error-color: #f5222d;
+  --text-primary: #262626;
+  --text-secondary: #8c8c8c;
+  --border-color: #f0f0f0;
+  --background-color: #f5f5f5;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .ant-card {
+    padding: 12px !important;
+  }
+  
+  .ant-card-body {
+    padding: 12px !important;
+  }
+  
+  .ant-tabs {
+    font-size: 14px;
+  }
+  
+  .ant-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+/* Кастомные стили для Ant Design компонентов */
+
+/* Улучшаем таблицу */
+.ant-table-small .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+/* Улучшаем карточки */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Улучшаем табы */
+.ant-tabs-tab {
+  padding: 8px 16px;
+}
+
+/* Улучшаем формы */
+.ant-form-item-label > label {
+  font-weight: 500;
+}
+
+/* Улучшаем кнопки */
+.ant-btn-primary {
+  box-shadow: 0 2px 0 rgba(5, 145, 255, 0.1);
+}
+
+/* Улучшаем алерты */
+.ant-alert {
+  border-radius: 6px;
+}
+
+/* Специфичные стили для приложения */
+
+/* Фон для страницы аутентификации */
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Хедер приложения */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Контейнер для мобильных */
+.mobile-container {
+  padding: 0;
+}
+
+/* Утилиты для текста */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Скрыть на мобильных */
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* Показать только на мобильных */
+@media (min-width: 769px) {
+  .show-on-mobile {
+    display: none !important;
+  }
+}```
+
+## 📄 src/styles/components.css
+```
+/* Старые стили для компонентов, которые еще не переведены на Ant Design */
+
+/* Карточки */
+
+
+/* Уведомления */
+.message-box {
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.message-box.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.message-box.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 18px;
+}
+
+/* Блок предпросмотра функции */
+.feature-preview {
+  margin-top: 25px;
+  padding: 20px;
+  background: #cacbcb36;
+  border: 1px solid #82929a;
+  border-radius: 10px;
+  border-left: 2px solid #6884b1;
+}
+
+.feature-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.feature-icon {
+  font-size: 24px;
+}
+
+.feature-preview h4 {
+  color: #3f4043;
+  margin: 0;
+  font-size: 18px;
+}
+
+.feature-preview-content p {
+  color: #374151;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.feature-preview ul {
+  padding-left: 20px;
+  margin-bottom: 20px;
+  color: #4b5563;
+}
+
+.feature-preview li {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* Стили для страницы "О проекте" */
+.about-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  margin-bottom: 20px;
+}
+
+.news-section {
+  margin-top: 30px;
+}
+
+.news-item {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 0;
+}
+
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 5px;
+}
+
+.news-title {
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.news-content {
+  color: #374151;
+  line-height: 1.5;
+}
+
+.section {
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section h3 {
+  color: #1e40af;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.section p {
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.section ul {
+  padding-left: 20px;
+  color: #4b5563;
+}
+
+.section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.tech-info ul, .contact-info p {
+  font-size: 14px;
+}
+
+.contact-info a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.contact-info a:hover {
+  text-decoration: underline;
+}```
+
+## 📄 src/styles/utilities.css
+```
+/* Утилитарные классы для быстрого доступа */
+
+.text-center {
+  text-align: center;
+}
+
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; }
+.mt-5 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.mb-5 { margin-bottom: 2rem; }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }```
+
+## 📄 src/styles/base.css
+```
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Mono', 'Roboto Mono', monospace;
+}
+
+code, .file-hint, small {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}```
+
+## 📄 src/components/Profile.jsx
+```
+import React, { useState, useEffect } from 'react'
+import {
+	Form,
+	Input,
+	Button,
+	Radio,
+	Card,
+	message,
+	Spin,
+	Typography,
+	Space,
+	Alert,
+} from 'antd'
+import {
+	UserOutlined,
+	SaveOutlined,
+	EyeOutlined,
+	EyeInvisibleOutlined,
+	ExperimentOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../shared/api/supabase'
+
+const { Title, Text } = Typography
+
+export default function Profile({ user, onUpdate, isMobile }) {
+	const [form] = Form.useForm()
+	const [loading, setLoading] = useState(false)
+	const [profileLoading, setProfileLoading] = useState(true)
+
+	useEffect(() => {
+		loadProfile()
+	}, [user])
+
+	async function loadProfile() {
+		try {
+			const { data } = await supabase
+				.from('profiles')
+				.select('username, ski_model, visibility_preference')
+				.eq('id', user.id)
+				.single()
+
+			if (data) {
+				form.setFieldsValue({
+					username: data.username || '',
+					skiModel: data.ski_model || '',
+					visibility: data.visibility_preference || 'public',
+				})
+			}
+		} catch (error) {
+			console.error('Ошибка загрузки профиля:', error)
+		} finally {
+			setProfileLoading(false)
+		}
+	}
+
+	async function handleSubmit(values) {
+		const { username, skiModel, visibility } = values
+
+		if (!username?.trim()) {
+			message.error('Введите имя')
+			return
+		}
+
+		setLoading(true)
+
+		try {
+			const {
+				data: { session },
+			} = await supabase.auth.getSession()
+			if (!session) throw new Error('Нет сессии')
+
+			const { error } = await supabase.from('profiles').upsert({
+				id: session.user.id,
+				username: username.trim(),
+				ski_model: skiModel?.trim() || null,
+				visibility_preference: visibility,
+				updated_at: new Date().toISOString(),
+			})
+
+			if (error) throw error
+
+			message.success('Профиль успешно обновлен!')
+			onUpdate?.()
+		} catch (error) {
+			console.error('Ошибка сохранения:', error)
+			message.error('Ошибка: ' + error.message)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	return (
+		<Card
+			title={
+				<Space>
+					<UserOutlined />
+					<span>Мой профиль</span>
+				</Space>
+			}
+			bordered={false}
+			style={{ width: '100%' }}
+		>
+			<Spin spinning={profileLoading}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+					disabled={loading}
+				>
+					<Space direction='vertical' size='large' style={{ width: '100%' }}>
+						{/* Имя и модель лыж */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Имя в таблице'
+								name='username'
+								rules={[
+									{ required: true, message: 'Введите имя' },
+									{ min: 2, message: 'Минимум 2 символа' },
+								]}
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Ваше имя'
+									prefix={<UserOutlined />}
+									maxLength={30}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Модель лыж'
+								name='skiModel'
+								extra='Будет использоваться по умолчанию для новых заездов'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Производитель Модель'
+									prefix={<ExperimentOutlined />}
+									list='ski-brands'
+								/>
+								<datalist id='ski-brands'>
+									<option value='Fischer' />
+									<option value='Rossignol' />
+									<option value='Madshus' />
+									<option value='Salomon' />
+									<option value='Atomic' />
+									<option value='Pioneer' />
+									<option value='Tisa' />
+									<option value='Karhu' />
+									<option value='Peltonen' />
+									<option value='Brados' />
+								</datalist>
+							</Form.Item>
+						</div>
+
+						{/* Настройки видимости */}
+						<Form.Item label='Настройки видимости' name='visibility'>
+							<Radio.Group style={{ width: '100%' }}>
+								<Space
+									direction='vertical'
+									size='middle'
+									style={{ width: '100%' }}
+								>
+									<Card
+										size='small'
+										style={{
+											border: '1px solid #d9d9d9',
+											borderRadius: '8px',
+											cursor: 'pointer',
+										}}
+										onClick={() => form.setFieldValue('visibility', 'public')}
+									>
+										<Radio
+											value='public'
+											style={{
+												width: '100%',
+												display: 'flex',
+												alignItems: 'flex-start',
+											}}
+										>
+											<Space
+												direction='vertical'
+												size={2}
+												style={{ marginLeft: '8px' }}
+											>
+												<Space size={8}>
+													<EyeOutlined style={{ color: '#52c41a' }} />
+													<Text strong>Публичное участие</Text>
+												</Space>
+												<div style={{ marginLeft: '24px' }}>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Имя в общем рейтинге
+													</Text>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Полная конкуренция
+													</Text>
+												</div>
+											</Space>
+										</Radio>
+									</Card>
+
+									<Card
+										size='small'
+										style={{
+											border: '1px solid #d9d9d9',
+											borderRadius: '8px',
+											cursor: 'pointer',
+										}}
+										onClick={() =>
+											form.setFieldValue('visibility', 'anonymous')
+										}
+									>
+										<Radio
+											value='anonymous'
+											style={{
+												width: '100%',
+												display: 'flex',
+												alignItems: 'flex-start',
+											}}
+										>
+											<Space
+												direction='vertical'
+												size={2}
+												style={{ marginLeft: '8px' }}
+											>
+												<Space size={8}>
+													<EyeInvisibleOutlined style={{ color: '#fa8c16' }} />
+													<Text strong>Анонимное участие</Text>
+												</Space>
+												<div style={{ marginLeft: '24px' }}>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• В рейтинге как "Лыжник №Х"
+													</Text>
+													<Text type='secondary' style={{ display: 'block' }}>
+														• Вижу своё место
+													</Text>
+												</div>
+											</Space>
+										</Radio>
+									</Card>
+								</Space>
+							</Radio.Group>
+						</Form.Item>
+
+						{/* Кнопка сохранения */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={<SaveOutlined />}
+								loading={loading}
+								size='large'
+								block={isMobile}
+								style={{
+									height: '48px',
+									fontSize: '16px',
+								}}
+							>
+								Сохранить настройки
+							</Button>
+						</Form.Item>
+					</Space>
+				</Form>
+			</Spin>
+		</Card>
+	)
+}
+```
+
+## 📄 src/components/AddTimeForm.jsx
+```
+import React, { useState, useEffect } from 'react'
+import {
+	Form,
+	Input,
+	InputNumber,
+	DatePicker,
+	Button,
+	Upload,
+	message,
+	Spin,
+	Alert,
+	Typography,
+	Space,
+	Card,
+} from 'antd'
+import {
+	UploadOutlined,
+	PlusOutlined,
+	CheckCircleOutlined,
+	FileTextOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+import dayjs from 'dayjs'
+
+const { TextArea } = Input
+const { Text } = Typography
+
+export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
+	const [form] = Form.useForm()
+	const [uploading, setUploading] = useState(false)
+	const [loading, setLoading] = useState(false)
+	const [fileList, setFileList] = useState([])
+	const [userProfile, setUserProfile] = useState(null)
+	const [autoFilledSkiModel, setAutoFilledSkiModel] = useState('')
+
+	// Устанавливаем текущую дату по умолчанию и загружаем профиль
+	useEffect(() => {
+		// Устанавливаем текущую дату
+		form.setFieldsValue({
+			date: dayjs(),
+		})
+
+		// Загружаем профиль пользователя для авто-заполнения модели лыж
+		async function loadUserProfile() {
+			if (user) {
+				const { data } = await supabase
+					.from('profiles')
+					.select('ski_model')
+					.eq('id', user.id)
+					.single()
+
+				if (data?.ski_model) {
+					setAutoFilledSkiModel(data.ski_model)
+					form.setFieldsValue({
+						skiModel: data.ski_model,
+					})
+				}
+			}
+		}
+
+		loadUserProfile()
+	}, [user, form])
+
+	// Функция для транслитерации
+	const transliterate = text => {
+		const ru = {
+			а: 'a',
+			б: 'b',
+			в: 'v',
+			г: 'g',
+			д: 'd',
+			е: 'e',
+			ё: 'yo',
+			ж: 'zh',
+			з: 'z',
+			и: 'i',
+			й: 'y',
+			к: 'k',
+			л: 'l',
+			м: 'm',
+			н: 'n',
+			о: 'o',
+			п: 'p',
+			р: 'r',
+			с: 's',
+			т: 't',
+			у: 'u',
+			ф: 'f',
+			х: 'h',
+			ц: 'ts',
+			ч: 'ch',
+			ш: 'sh',
+			щ: 'shch',
+			ъ: '',
+			ы: 'y',
+			ь: '',
+			э: 'e',
+			ю: 'yu',
+			я: 'ya',
+		}
+
+		return text
+			.toLowerCase()
+			.split('')
+			.map(char => ru[char] || char)
+			.join('')
+	}
+
+	// Загрузка GPX файла
+	const uploadGpxFile = async file => {
+		setUploading(true)
+		try {
+			const originalName = file.name.replace(/\.[^/.]+$/, '')
+			const transliteratedName = transliterate(originalName)
+			const safeName = transliteratedName
+				.replace(/[^a-zA-Z0-9]/g, '_')
+				.replace(/_+/g, '_')
+				.replace(/^_+|_+$/g, '')
+
+			const fileExt = file.name.split('.').pop().toLowerCase()
+			const fileName = `${Date.now()}_${user.id}_${
+				safeName || 'track'
+			}.${fileExt}`
+			const finalFileName = safeName
+				? fileName
+				: `${Date.now()}_${user.id}_track.${fileExt}`
+
+			const { error } = await supabase.storage
+				.from('gpx-tracks')
+				.upload(finalFileName, file)
+
+			if (error) {
+				console.error('Ошибка Supabase при загрузке:', error)
+				throw error
+			}
+
+			const {
+				data: { publicUrl },
+			} = supabase.storage.from('gpx-tracks').getPublicUrl(finalFileName)
+
+			return { url: publicUrl }
+		} catch (error) {
+			console.error('Ошибка загрузки GPX:', error)
+			message.error('Ошибка загрузки файла: ' + error.message)
+			return null
+		} finally {
+			setUploading(false)
+		}
+	}
+
+	// Обработчик отправки формы
+	const handleSubmit = async values => {
+		const { minutes, seconds, date, skiModel, comment } = values
+
+		const totalSeconds = (minutes || 0) * 60 + (seconds || 0)
+
+		if (totalSeconds <= 0) {
+			message.error('Время должно быть больше 0 секунд')
+			return
+		}
+
+		setLoading(true)
+
+		try {
+			let gpxData = null
+			if (fileList.length > 0) {
+				gpxData = await uploadGpxFile(fileList[0])
+			}
+
+			const dateTime = date ? date.toISOString() : new Date().toISOString()
+
+			const { error } = await supabase.from('lap_times').insert({
+				user_id: user.id,
+				time_seconds: totalSeconds,
+				comment: comment?.trim() || null,
+				ski_model: skiModel?.trim() || null,
+				gpx_track_url: gpxData?.url || null,
+				verified: !!gpxData,
+				date: dateTime,
+				user_name: user.email.split('@')[0],
+			})
+
+			if (error) throw error
+
+			// Успешное добавление
+			message.success(
+				gpxData ? 'Заезд добавлен с подтверждением!' : 'Заезд добавлен!',
+				3
+			)
+
+			// Сброс формы
+			form.resetFields()
+			setFileList([])
+
+			// Восстанавливаем авто-заполненную модель лыж
+			if (autoFilledSkiModel) {
+				form.setFieldsValue({
+					skiModel: autoFilledSkiModel,
+				})
+			}
+
+			// Устанавливаем текущую дату
+			form.setFieldsValue({
+				date: dayjs(),
+			})
+
+			onTimeAdded?.()
+		} catch (error) {
+			console.error('Ошибка добавления заезда:', error)
+			message.error('Ошибка: ' + error.message)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	// Настройки загрузки файлов
+	const uploadProps = {
+		onRemove: () => {
+			setFileList([])
+		},
+		beforeUpload: file => {
+			if (!file.name.endsWith('.gpx')) {
+				message.error('Пожалуйста, выберите GPX файл')
+				return Upload.LIST_IMPORT
+			}
+			setFileList([file])
+			return false
+		},
+		fileList,
+		maxCount: 1,
+		accept: '.gpx',
+	}
+
+	return (
+		<Card
+			title={
+				<Space>
+					<PlusOutlined />
+					<span>Добавить новый заезд</span>
+				</Space>
+			}
+			bordered={false}
+			style={{ width: '100%' }}
+		>
+			<Spin spinning={loading || uploading}>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleSubmit}
+					size='middle'
+					disabled={loading || uploading}
+				>
+					<Space direction='vertical' size='middle' style={{ width: '100%' }}>
+						{/* Дата и время */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='Дата заезда'
+								name='date'
+								rules={[{ required: true, message: 'Выберите дату' }]}
+								style={{ flex: 1, minWidth: '150px' }}
+							>
+								<DatePicker
+									format='DD.MM.YYYY'
+									style={{ width: '100%' }}
+									disabledDate={current =>
+										current && current > dayjs().endOf('day')
+									}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Минуты'
+								name='minutes'
+								rules={[
+									{ required: true, message: 'Введите минуты' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+
+							<Form.Item
+								label='Секунды'
+								name='seconds'
+								rules={[
+									{ required: true, message: 'Введите секунды' },
+									{ type: 'number', min: 0, max: 59, message: 'От 0 до 59' },
+								]}
+								style={{ width: '100px' }}
+							>
+								<InputNumber
+									min={0}
+									max={59}
+									placeholder='0'
+									style={{ width: '100%' }}
+								/>
+							</Form.Item>
+						</div>
+
+						{/* Модель лыж */}
+						<Form.Item
+							label='Модель лыж'
+							name='skiModel'
+							extra={
+								autoFilledSkiModel
+									? 'Модель из вашего профиля. Можете изменить для этого заезда.'
+									: 'Укажите модель лыж для этого заезда'
+							}
+						>
+							<Input
+								placeholder='Например: Fischer Speedmax'
+								list='ski-models'
+							/>
+							<datalist id='ski-models'>
+								<option value='Brados' />
+								<option value='Fischer' />
+								<option value='Rossignol' />
+								<option value='Madshus' />
+								<option value='Salomon' />
+								<option value='Atomic' />
+								<option value='Tisa' />
+							</datalist>
+						</Form.Item>
+
+						{/* GPX трек и комментарий */}
+						<div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+							<Form.Item
+								label='GPX трек (необязательно)'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Space
+									direction='vertical'
+									size='small'
+									style={{ width: '100%' }}
+								>
+									<Upload {...uploadProps}>
+										<Button icon={<UploadOutlined />}>
+											{fileList.length > 0
+												? fileList[0].name
+												: 'Выберите GPX файл'}
+										</Button>
+									</Upload>
+
+									<Text type='secondary'>
+										{uploading
+											? 'Загрузка файла...'
+											: 'Загрузите трек для подтверждения заезда'}
+									</Text>
+								</Space>
+							</Form.Item>
+
+							<Form.Item
+								label='Комментарий'
+								name='comment'
+								style={{ flex: 1, minWidth: '200px' }}
+							>
+								<Input
+									placeholder='Погода, состояние трассы...'
+									maxLength={100}
+								/>
+							</Form.Item>
+						</div>
+
+						{/* Информация о подтверждении */}
+						{fileList.length > 0 && (
+							<Alert
+								message='Подтверждение заезда'
+								description="Этот заезд будет отмечен как 'Подтвержденный' после загрузки GPX трека."
+								type='success'
+								showIcon
+								icon={<CheckCircleOutlined />}
+							/>
+						)}
+
+						{/* Кнопка отправки */}
+						<Form.Item style={{ marginBottom: 0 }}>
+							<Button
+								type='primary'
+								htmlType='submit'
+								icon={<PlusOutlined />}
+								loading={loading}
+								disabled={uploading}
+								size='large'
+								block={isMobile}
+								style={{
+									backgroundColor: '#52c41a',
+									borderColor: '#52c41a',
+									height: '48px',
+									fontSize: '16px',
+								}}
+							>
+								{uploading
+									? 'Загрузка трека...'
+									: loading
+									? 'Добавление...'
+									: '🎿 Добавить заезд'}
+							</Button>
+						</Form.Item>
+
+						{/* Подсказки */}
+						<Alert
+							message='Подсказки'
+							description={
+								<Space
+									direction='vertical'
+									size='small'
+									style={{ width: '100%' }}
+								>
+									<Text type='secondary'>
+										• GPX файлы подтверждают заезд и добавляют статус
+										"Подтвержденный"
+									</Text>
+									<Text type='secondary'>
+										• Модель лыж можно указать для каждого заезда отдельно
+									</Text>
+									<Text type='secondary'>
+										• Комментарий помогает запомнить условия заезда
+									</Text>
+								</Space>
+							}
+							type='info'
+							showIcon
+						/>
+					</Space>
+				</Form>
+			</Spin>
+		</Card>
+	)
+}
+```
+
+## 📄 src/components/About.module.css
+```
+.aboutContainer {
+  padding: 20px;
+}
+
+.section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section h3 {
+  color: #1890ff;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.section p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.section ul {
+  padding-left: 20px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.newsSection {
+  margin-top: 32px;
+}
+
+.newsItem {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.newsItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.newsDate {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.newsTitle {
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.newsContent {
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .aboutContainer {
+    padding: 12px;
+  }
+  
+  .section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+  
+  .newsItem {
+    padding: 12px 0;
+  }
+}
+
+
+/* Стили для контактов */
+.contactsSection {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.telegramLink {
+  color: #1890ff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.telegramLink:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Стили для технологий */
+.techSection {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px dashed #f0f0f0;
+  text-align: center;
+}
+
+.techText {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.telegramIcon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  fill: currentColor;
+  vertical-align: middle;
+}```
+
+## 📄 src/components/About.jsx
+```
+import React from 'react'
+import { Card, Typography, List, Space } from 'antd'
+import {
+  InfoCircleOutlined,
+  RocketOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  CloudUploadOutlined,
+  CodeOutlined,
+  MessageOutlined,
+  CalendarOutlined
+} from '@ant-design/icons'
+import styles from './About.module.css'
+
+const { Title, Text, Paragraph } = Typography
+
+export default function About() {
+  return (
+		<Card
+			title={
+				<Space>
+					<InfoCircleOutlined />
+					<span>О проекте</span>
+				</Space>
+			}
+			bordered={false}
+		>
+			<div className={styles.aboutContainer}>
+				{/* Что это? */}
+				<div className={styles.section}>
+					<Title level={4}>
+						<RocketOutlined style={{ marginRight: '8px' }} />
+						Что это?
+					</Title>
+					<Paragraph>
+						Лыжный Рейтинг Друзей — это платформа для сравнения результатов в
+						лыжных заездах среди друзей. Отслеживайте свои результаты и
+						прогресс!
+					</Paragraph>
+				</div>
+
+				{/* Как это работает? */}
+				<div className={styles.section}>
+					<Title level={4}>Как это работает?</Title>
+					<List
+						size='small'
+						dataSource={[
+							'Добавляйте заезды — вводите время и загружайте GPX треки',
+							'Редактируйте заезды — обновляйте время, модель лыж, добавляйте GPX треки',
+							'Сравнивайте результаты — смотрите таблицу лидеров',
+							'Подтверждайте заезды — GPX файлы добавляют статус "Подтверждено"',
+							'Анализируйте прогресс — отслеживайте улучшение результатов',
+						]}
+						renderItem={item => (
+							<List.Item>
+								<Text>• {item}</Text>
+							</List.Item>
+						)}
+					/>
+				</div>
+
+				{/* Конфиденциальность */}
+				<div className={styles.section}>
+					<Title level={4}>Конфиденциальность</Title>
+					<Paragraph>
+						Вы можете выбрать уровень видимости своих результатов:
+					</Paragraph>
+					<List
+						size='small'
+						dataSource={[
+							{
+								icon: <EyeOutlined style={{ color: '#52c41a' }} />,
+								title: 'Публичный',
+								desc: 'Все видят ваше имя и результаты',
+							},
+							{
+								icon: <EyeInvisibleOutlined style={{ color: '#fa8c16' }} />,
+								title: 'Анонимный',
+								desc: 'Вас показывают как "Лыжник №X"',
+							},
+						]}
+						renderItem={item => (
+							<List.Item>
+								<Space>
+									{item.icon}
+									<div>
+										<Text strong>{item.title}</Text>
+										<br />
+										<Text type='secondary'>{item.desc}</Text>
+									</div>
+								</Space>
+							</List.Item>
+						)}
+					/>
+				</div>
+
+				{/* Новости проекта */}
+				<div className={styles.newsSection}>
+					<Title level={4}>
+						<CalendarOutlined style={{ marginRight: '8px' }} />
+						Новости проекта
+					</Title>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>27 декабря 2025</div>
+						<div className={styles.newsTitle}>
+							Добавлено редактирование заездов
+						</div>
+						<div className={styles.newsContent}>
+							Теперь можно редактировать свои заезды: обновлять время, модель
+							лыж, добавлять или удалять GPX треки. Для каждого заезда можно
+							указать свою модель лыж.
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>24 декабря 2025</div>
+						<div className={styles.newsTitle}>
+							Добавлены настройки конфиденциальности
+						</div>
+						<div className={styles.newsContent}>
+							Теперь можно выбрать, как показывать ваши результаты: публично или
+							анонимно. В анонимном режиме вы отображаетесь как "Лыжник №X".
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>23 декабря 2025</div>
+						<div className={styles.newsTitle}>Загрузка GPX треков</div>
+						<div className={styles.newsContent}>
+							Добавлена возможность загружать GPX файлы для подтверждения
+							заездов. Заезды с треками отмечаются как "Подтвержденные".
+							Исправлена загрузка файлов с кириллическими именами.
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>21 декабря 2025</div>
+						<div className={styles.newsTitle}>Запуск проекта</div>
+						<div className={styles.newsContent}>
+							Проект успешно запущен под названием "Лыжный Рейтинг Друзей".
+						</div>
+					</div>
+				</div>
+
+				{/* Технологии */}
+
+				{/* Контакты */}
+				{/* Контакты - отдельно с отступом */}
+				<div className={`${styles.section} ${styles.contactsSection}`}>
+					<Title level={4}>
+						<MessageOutlined style={{ marginRight: '8px' }} />
+						Контакты
+					</Title>
+					<Paragraph>
+						<Space>
+							Есть вопросы или предложения? Для связи: телеграм
+							<a
+								href='https://t.me/titov_films'
+								target='_blank'
+								rel='noopener noreferrer'
+								className={styles.telegramLink}
+							>
+								@titov_films
+							</a>
+						</Space>
+					</Paragraph>
+				</div>
+
+				{/* Технологии */}
+				<div className={styles.techSection}>
+					<Text type='secondary' className={styles.techText}>
+						<CodeOutlined style={{ marginRight: '6px' }} />
+						Технологии: React • Ant Design • Supabase • Vercel
+					</Text>
+				</div>
+			</div>
+		</Card>
+	)
+}```
+
+## 📄 src/App.jsx
+```
+import React, { useState, useEffect } from 'react'
+import { Layout, Tabs, Button, Card, Spin, message } from 'antd'
+import {
+	TrophyOutlined,
+	PlusOutlined,
+	InfoCircleOutlined,
+	UserOutlined,
+	LogoutOutlined,
+	LoadingOutlined,
+} from '@ant-design/icons'
+import { supabase } from './shared/api/supabase'
+
+// Новые импорты из FSD структуры
+import { Auth } from './features/auth'
+import { Profile } from './features/profile'
+import { AddTimeForm } from './features/lap-times'
+import Leaderboard from './widgets/Leaderboard/ui/Leaderboard'
+import { About } from './widgets/about'
+import Map from './widgets/Map'
+import { EnvironmentOutlined } from '@ant-design/icons'
+
+import './styles/base.css'
+import './styles/components.css'
+import './styles/utilities.css'
+import './styles/App.css'
+
+// ... остальной код App.jsx (нужно вставить из backup)
+import './styles/utilities.css'
+import './styles/App.css'
+
+const { Header: AntHeader, Content, Footer } = Layout
+const { TabPane } = Tabs
+
+function App() {
+	const [user, setUser] = useState(null)
+	const [times, setTimes] = useState([])
+	const [loading, setLoading] = useState(true)
+const [activeTab, setActiveTab] = useState(() => {
+  const saved = localStorage.getItem('ski-track-active-tab');
+  return saved || 'leaderboard';
+});
+	const [isMobile, setIsMobile] = useState(false)
+
+	// Определяем мобильное устройство
+	useEffect(() => {
+		const checkMobile = () => {
+			setIsMobile(window.innerWidth <= 768)
+		}
+
+		checkMobile()
+		window.addEventListener('resize', checkMobile)
+
+		return () => window.removeEventListener('resize', checkMobile)
+	}, [])
+
+useEffect(() => {
+	supabase.auth.getSession().then(({ data: { session } }) => {
+		setUser(session?.user || null)
+		setLoading(false)
+
+		// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
+		const savedTab = localStorage.getItem('ski-track-active-tab')
+		if (
+			savedTab &&
+			['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
+		) {
+			setActiveTab(savedTab)
+		}
+	})
+
+	const {
+		data: { subscription },
+	} = supabase.auth.onAuthStateChange((_event, session) => {
+		setUser(session?.user || null)
+	})
+
+	return () => subscription.unsubscribe()
+}, [])
+
+	useEffect(() => {
+		if (user) {
+			fetchTimes()
+		}
+	}, [user])
+
+	async function fetchTimes() {
+		try {
+			let query = supabase
+				.from('lap_times')
+				.select('*')
+				.order('time_seconds', { ascending: true })
+
+			const { data, error } = await query
+
+			if (error) throw error
+
+			if (user) {
+				const { data: profile } = await supabase
+					.from('profiles')
+					.select('visibility_preference')
+					.eq('id', user.id)
+					.single()
+
+				if (profile?.visibility_preference === 'private') {
+					setTimes(data.filter(time => time.user_id === user.id))
+				} else {
+					setTimes(data)
+				}
+			} else {
+				setTimes(data)
+			}
+		} catch (error) {
+			console.error('Ошибка загрузки заездов:', error)
+			message.error('Ошибка загрузки заездов')
+		}
+	}
+
+	async function handleLogout() {
+		await supabase.auth.signOut()
+		setUser(null)
+		message.success('Вы вышли из системы')
+	}
+
+	if (loading) {
+		return (
+			<div
+				style={{
+					textAlign: 'center',
+					padding: '50px 20px',
+					minHeight: '100vh',
+					display: 'flex',
+					flexDirection: 'column',
+					justifyContent: 'center',
+					background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+				}}
+			>
+				<Spin
+					indicator={
+						<LoadingOutlined style={{ fontSize: 48, color: '#fff' }} spin />
+					}
+				/>
+				<p style={{ marginTop: '20px', color: '#fff' }}>Загрузка...</p>
+			</div>
+		)
+	}
+
+	if (!user) {
+		return (
+			<div
+				style={{
+					minHeight: '100vh',
+					padding: isMobile ? '10px' : '20px',
+					background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}
+			>
+				<div
+					style={{
+						width: '100%',
+						maxWidth: '500px',
+						padding: isMobile ? '15px' : '30px',
+					}}
+				>
+					<Auth onLoginSuccess={setUser} />
+				</div>
+			</div>
+		)
+	}
+
+	const handleTabChange = key => {
+		setActiveTab(key);
+		localStorage.setItem('ski-track-active-tab', key);
+	}
+
+	return (
+		<Layout
+			className='layout'
+			style={{
+				minHeight: '100vh',
+				background: isMobile
+					? '#fff'
+					: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+			}}
+		>
+			<AntHeader
+				style={{
+					background: isMobile ? '#fff' : '#fff',
+					padding: isMobile ? '0 10px' : '0 20px',
+					boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					height: isMobile ? '56px' : '64px',
+				}}
+			>
+				<div style={{ display: 'flex', alignItems: 'center' }}>
+					<h1
+						style={{
+							margin: 0,
+							fontSize: isMobile ? '16px' : '24px',
+							color: isMobile ? '#1890ff' : '#000',
+							whiteSpace: 'nowrap',
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							maxWidth: isMobile ? '200px' : 'none',
+						}}
+					>
+						{isMobile
+							? '🎿 Ретинг ЛБК малый круг	'
+							: '🎿 Лыжный Рейтинг (ЛБК, малый круг)'}
+					</h1>
+				</div>
+
+				<div
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: isMobile ? '6px' : '10px',
+					}}
+				>
+					<Button
+						type='text'
+						icon={<UserOutlined />}
+						onClick={() => setActiveTab('profile')}
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							padding: isMobile ? '4px 8px' : '8px 12px',
+							fontSize: isMobile ? '12px' : '14px',
+						}}
+					>
+						{!isMobile && user.email}
+					</Button>
+					<Button
+						type='text'
+						icon={<LogoutOutlined />}
+						onClick={handleLogout}
+						danger
+						size={isMobile ? 'small' : 'middle'}
+					>
+						{!isMobile && 'Выйти'}
+					</Button>
+				</div>
+			</AntHeader>
+
+			<Content
+				style={{
+					padding: isMobile ? '10px' : '20px',
+					background: isMobile ? '#fff' : 'transparent',
+				}}
+			>
+				{!isMobile ? (
+					<Card
+						style={{
+							minHeight: 'calc(100vh - 180px)',
+							borderRadius: '12px',
+							boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+						}}
+					>
+						<Tabs
+							activeKey={activeTab}
+							onChange={handleTabChange}
+							items={[
+								{
+									key: 'leaderboard',
+									label: (
+										<span>
+											<TrophyOutlined /> Таблица
+										</span>
+									),
+								},
+
+								{
+									key: 'add',
+									label: (
+										<span>
+											<PlusOutlined /> Добавить
+										</span>
+									),
+								},
+								{
+									key: 'map', // НОВЫЙ КЛЮЧ
+									label: (
+										<span>
+											<EnvironmentOutlined /> Карта ЛБК
+										</span>
+									),
+								},
+								{
+									key: 'about',
+									label: (
+										<span>
+											<InfoCircleOutlined /> О проекте
+										</span>
+									),
+								},
+							]}
+						/>
+						<div style={{ marginTop: '20px' }}>
+							{activeTab === 'leaderboard' && (
+								<Leaderboard
+									times={times}
+									user={user}
+									onTimeUpdated={fetchTimes}
+								/>
+							)}
+							{activeTab === 'map' && <Map user={user} />}
+							{activeTab === 'add' && (
+								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
+							)}
+							{activeTab === 'profile' && (
+								<Profile user={user} onUpdate={fetchTimes} />
+							)}
+							{activeTab === 'about' && <About />}
+						</div>
+					</Card>
+				) : (
+					// Мобильная версия без лишних оберток
+					<div>
+						<Tabs
+							activeKey={activeTab}
+							onChange={handleTabChange}
+							items={[
+								{
+									key: 'leaderboard',
+									label: (
+										<span>
+											<TrophyOutlined /> Таблица
+										</span>
+									),
+								},
+								{
+									key: 'map', // НОВЫЙ КЛЮЧ
+									label: (
+										<span>
+											<EnvironmentOutlined /> Карта
+										</span>
+									),
+								},
+								{
+									key: 'add',
+									label: (
+										<span>
+											<PlusOutlined /> Добавить
+										</span>
+									),
+								},
+								{
+									key: 'about',
+									label: (
+										<span>
+											<InfoCircleOutlined /> О проекте
+										</span>
+									),
+								},
+							]}
+							style={{
+								marginBottom: '10px',
+							}}
+						/>
+
+						<div>
+							{activeTab === 'leaderboard' && (
+								<Leaderboard
+									times={times}
+									user={user}
+									onTimeUpdated={fetchTimes}
+								/>
+							)}
+							{activeTab === 'add' && (
+								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
+							)}
+							{activeTab === 'profile' && (
+								<Profile user={user} onUpdate={fetchTimes} />
+							)}
+							{activeTab === 'about' && <About />}
+						</div>
+					</div>
+				)}
+			</Content>
+
+			{!isMobile && (
+				<Footer
+					style={{
+						textAlign: 'center',
+						background: '#fff',
+						padding: '15px 20px',
+					}}
+				>
+					Лыжный Рейтинг ©2025
+				</Footer>
+			)}
+		</Layout>
+	)
+}
+
+export default App
+```
+
+## 📄 src/lib/supabase.js
+```
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://xsqelqxwthjufdwfdecf.supabase.co'
+const supabaseKey =
+	process.env.REACT_APP_SUPABASE_ANON_KEY ||
+	'sb_publishable_XTAAbOUtNz-UyekvCQMB-A_dzlGjS1O'
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+```
+
+## 📄 src/widgets/Leaderboard/ui/Leaderboard.jsx
+```
+import React, { useState, useEffect } from 'react'
+import { Table, Tag, Tooltip, Button, Modal, message } from 'antd'
+import {
+	EditOutlined,
+	FileTextOutlined,
+	EyeOutlined,
+	TrophyOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+import EditTimeForm from '../../../features/lap-times/ui/EditTimeForm'
+
+const Leaderboard = ({ times, user, onTimeUpdated, isMobile = false }) => {
+	const [anonymousNumbers, setAnonymousNumbers] = useState({})
+	const [userVisibility, setUserVisibility] = useState('public')
+	const [skierProfiles, setSkierProfiles] = useState({})
+	const [editingTime, setEditingTime] = useState(null)
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+	const [loading, setLoading] = useState(false)
+
+	// Загружаем настройки видимости всех пользователей
+	useEffect(() => {
+		async function loadProfiles() {
+			if (times.length === 0) return
+
+			const userIds = [...new Set(times.map(time => time.user_id))]
+
+			const { data: profiles } = await supabase
+				.from('profiles')
+				.select('id, username, visibility_preference')
+				.in('id', userIds)
+
+			if (profiles) {
+				const profilesMap = {}
+				profiles.forEach(profile => {
+					profilesMap[profile.id] = profile
+				})
+				setSkierProfiles(profilesMap)
+
+				// Генерируем номера для анонимных пользователей
+				const anonymousMap = {}
+				const anonymousUsers = profiles
+					.filter(p => p.visibility_preference === 'anonymous')
+					.map(p => {
+						const userTimes = times.filter(t => t.user_id === p.id)
+						const bestTime =
+							userTimes.length > 0
+								? Math.min(...userTimes.map(t => t.time_seconds))
+								: Infinity
+						return { id: p.id, bestTime }
+					})
+					.sort((a, b) => a.bestTime - b.bestTime)
+
+				anonymousUsers.forEach((user, index) => {
+					anonymousMap[user.id] = index + 1
+				})
+
+				setAnonymousNumbers(anonymousMap)
+			}
+		}
+
+		loadProfiles()
+	}, [times])
+
+	// Загружаем настройки текущего пользователя
+	useEffect(() => {
+		async function loadCurrentUserVisibility() {
+			if (user) {
+				const { data } = await supabase
+					.from('profiles')
+					.select('visibility_preference')
+					.eq('id', user.id)
+					.single()
+
+				if (data) {
+					setUserVisibility(data.visibility_preference || 'public')
+				}
+			}
+		}
+		loadCurrentUserVisibility()
+	}, [user])
+
+	// Форматирование времени
+	const formatTime = seconds => {
+		const mins = Math.floor(seconds / 60)
+		const secs = seconds % 60
+		return `${mins}:${secs.toString().padStart(2, '0')}`
+	}
+
+	// Получение отображаемого имени
+	const getDisplayName = time => {
+		const profile = skierProfiles[time.user_id]
+		const isCurrentUser = user && time.user_id === user.id
+
+		if (isCurrentUser && userVisibility === 'private') {
+			return 'Вы'
+		}
+
+		if (profile?.visibility_preference === 'anonymous') {
+			const number = anonymousNumbers[time.user_id] || '?'
+			return `Лыжник №${number}`
+		}
+
+		const name = profile?.username || time.user_name || 'Гость'
+		// Ограничиваем длину имени для мобильных
+		if (isMobile && name.length > 15) {
+			return name.substring(0, 15) + '...'
+		}
+		return name
+	}
+
+	// Фильтрация заездов
+	const filteredTimes = times.filter(time => {
+		if (!user) return true
+
+		const profile = skierProfiles[time.user_id]
+		const isCurrentUser = time.user_id === user.id
+
+		if (isCurrentUser) return true
+
+		if (userVisibility === 'private') return false
+
+		return true
+	})
+
+	// Обработка редактирования
+	const handleEditClick = time => {
+		setEditingTime(time)
+		setIsEditModalOpen(true)
+	}
+
+	const handleUpdateSuccess = () => {
+		setIsEditModalOpen(false)
+		setEditingTime(null)
+		onTimeUpdated?.()
+		message.success('Заезд обновлен')
+	}
+
+	const handleDeleteTime = async timeId => {
+		Modal.confirm({
+			title: 'Удалить заезд?',
+			content: 'Это действие нельзя отменить. Удалить заезд?',
+			okText: 'Да, удалить',
+			cancelText: 'Отмена',
+			okType: 'danger',
+			async onOk() {
+				try {
+					setLoading(true)
+					const { error } = await supabase
+						.from('lap_times')
+						.delete()
+						.eq('id', timeId)
+
+					if (error) throw error
+
+					message.success('Заезд удален')
+					onTimeUpdated?.()
+				} catch (error) {
+					console.error('Ошибка удаления:', error)
+					message.error('Ошибка при удалении заезда')
+				} finally {
+					setLoading(false)
+				}
+			},
+		})
+	}
+
+	// Колонки таблицы
+	const columns = [
+		{
+			title: '#',
+			dataIndex: 'position',
+			key: 'position',
+			width: 40,
+			align: 'center',
+			render: (_, __, index) => index + 1,
+		},
+		{
+			title: 'Лыжник',
+			dataIndex: 'user_id',
+			key: 'skier',
+			width: isMobile ? 120 : 150,
+			render: (userId, record) => {
+				const displayName = getDisplayName(record)
+				const isCurrentUser = user && userId === user.id
+
+				return (
+					<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+						<span
+							style={{
+								fontWeight: isCurrentUser ? 600 : 400,
+								color: isCurrentUser ? '#1890ff' : '#000',
+							}}
+						>
+							{displayName}
+						</span>
+						{isCurrentUser && (
+							<Tag color='blue' style={{ fontSize: '10px', padding: '0 4px' }}>
+								вы
+							</Tag>
+						)}
+					</div>
+				)
+			},
+		},
+		{
+			title: 'Время',
+			dataIndex: 'time_seconds',
+			key: 'time',
+			width: 70,
+			align: 'center',
+			render: seconds => (
+				<Tag color='green' style={{ margin: 0, fontWeight: 600 }}>
+					{formatTime(seconds)}
+				</Tag>
+			),
+		},
+		{
+			title: 'Лыжи',
+			dataIndex: 'ski_model',
+			key: 'ski_model',
+			width: isMobile ? 100 : 120,
+			render: model =>
+				model ? (
+					<Tag color='geekblue' style={{ fontSize: '11px' }}>
+						{model.length > 12 ? model.substring(0, 12) + '...' : model}
+					</Tag>
+				) : (
+					<span style={{ color: '#bfbfbf' }}>—</span>
+				),
+		},
+		{
+			title: 'Статус',
+			dataIndex: 'verified',
+			key: 'verified',
+			width: 50,
+			align: 'center',
+			render: verified =>
+				verified ? (
+					<Tooltip title='Подтверждено GPX'>
+						<Tag color='success' style={{ cursor: 'help', margin: 0 }}>
+							✓
+						</Tag>
+					</Tooltip>
+				) : (
+					<Tooltip title='Без подтверждения'>
+						<Tag color='warning' style={{ cursor: 'help', margin: 0 }}>
+							?
+						</Tag>
+					</Tooltip>
+				),
+		},
+		...(!isMobile
+			? [
+					{
+						title: 'Комментарий',
+						dataIndex: 'comment',
+						key: 'comment',
+						width: 150,
+						render: comment =>
+							comment ? (
+								<Tooltip title={comment}>
+									<span
+										style={{
+											display: 'inline-block',
+											maxWidth: '100%',
+											overflow: 'hidden',
+											textOverflow: 'ellipsis',
+											whiteSpace: 'nowrap',
+											cursor: 'help',
+										}}
+									>
+										<FileTextOutlined /> {comment}
+									</span>
+								</Tooltip>
+							) : (
+								<span style={{ color: '#bfbfbf' }}>—</span>
+							),
+					},
+			  ]
+			: []),
+		{
+			title: 'Трек',
+			dataIndex: 'gpx_track_url',
+			key: 'track',
+			width: 70,
+			align: 'center',
+			render: (url, record) => (
+				<div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+					{url && (
+						<Tooltip title='Просмотреть трек'>
+							<Button
+								type='text'
+								icon={<EyeOutlined />}
+								size='small'
+								href={url}
+								target='_blank'
+								rel='noopener noreferrer'
+							/>
+						</Tooltip>
+					)}
+					{user && record.user_id === user.id && (
+						<Tooltip title='Редактировать'>
+							<Button
+								type='text'
+								icon={<EditOutlined />}
+								size='small'
+								onClick={() => handleEditClick(record)}
+							/>
+						</Tooltip>
+					)}
+				</div>
+			),
+		},
+		{
+			title: 'Дата',
+			dataIndex: 'date',
+			key: 'date',
+			width: 90,
+			render: date =>
+				date ? (
+					<span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+						{new Date(date).toLocaleDateString('ru-RU')}
+					</span>
+				) : null,
+		},
+	]
+
+	// Статистика
+	const stats = {
+		total: filteredTimes.length,
+		verified: filteredTimes.filter(t => t.verified).length,
+		participants: new Set(filteredTimes.map(t => t.user_id)).size,
+	}
+
+	return (
+		<div>
+			{/* Информация о режиме просмотра */}
+			{user && userVisibility === 'private' && (
+				<div
+					style={{
+						background: '#fffbe6',
+						border: '1px solid #ffe58f',
+						borderRadius: '6px',
+						padding: '8px 12px',
+						marginBottom: '16px',
+						fontSize: '14px',
+						color: '#d48806',
+					}}
+				>
+					🔒 Режим просмотра: <strong>Только свои результаты</strong>
+				</div>
+			)}
+
+			{/* Таблица */}
+			<Table
+				columns={columns}
+				dataSource={filteredTimes}
+				rowKey='id'
+				pagination={{
+					pageSize: 20,
+					showSizeChanger: true,
+					showQuickJumper: true,
+					size: isMobile ? 'small' : 'default',
+				}}
+				size={isMobile ? 'small' : 'middle'}
+				scroll={isMobile ? { x: 600 } : undefined}
+				locale={{ emptyText: 'Пока нет заездов. Будьте первым!' }}
+				footer={() => (
+					<div
+						style={{
+							display: 'flex',
+							justifyContent: 'space-between',
+							fontSize: '12px',
+							color: '#666',
+							padding: '8px 0',
+						}}
+					>
+						<span>Всего: {stats.total} заездов</span>
+						<span>Подтверждено: {stats.verified}</span>
+						<span>Участников: {stats.participants}</span>
+					</div>
+				)}
+			/>
+
+
+
+			{/* Модальное окно редактирования */}
+			{editingTime && (
+				<Modal
+					title='Редактировать заезд'
+					open={isEditModalOpen}
+					onCancel={() => {
+						setIsEditModalOpen(false)
+						setEditingTime(null)
+					}}
+					footer={null}
+					width={isMobile ? '90%' : 600}
+					destroyOnClose
+				>
+					<EditTimeForm
+						time={editingTime}
+						onUpdate={handleUpdateSuccess}
+						onDelete={handleDeleteTime}
+						onClose={() => {
+							setIsEditModalOpen(false)
+							setEditingTime(null)
+						}}
+					/>
+				</Modal>
+			)}
+		</div>
+	)
+}
+
+export default Leaderboard
+```
+
+## 📄 src/widgets/Leaderboard/ui/Leaderboard.module.css
+```
+/* Стили для таблицы лидеров */
+.leaderboardContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+```
+
+## 📄 src/widgets/Leaderboard/index.js
+```
+export { default as Leaderboard } from "./ui/Leaderboard"
+```
+
+## 📄 src/widgets/about/ui/About.module.css
+```
+.aboutContainer {
+  padding: 20px;
+}
+
+.section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section h3 {
+  color: #1890ff;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.section p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.section ul {
+  padding-left: 20px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.newsSection {
+  margin-top: 32px;
+}
+
+.newsItem {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.newsItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.newsDate {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.newsTitle {
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.newsContent {
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .aboutContainer {
+    padding: 12px;
+  }
+  
+  .section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+  
+  .newsItem {
+    padding: 12px 0;
+  }
+}
+
+
+/* Стили для контактов */
+.contactsSection {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.telegramLink {
+  color: #1890ff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.telegramLink:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Стили для технологий */
+.techSection {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px dashed #f0f0f0;
+  text-align: center;
+}
+
+.techText {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.telegramIcon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  fill: currentColor;
+  vertical-align: middle;
+}```
+
+## 📄 src/widgets/about/ui/About.jsx
+```
+import React from 'react'
+import { Card, Typography, List, Space } from 'antd'
+import {
+  InfoCircleOutlined,
+  RocketOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  CloudUploadOutlined,
+  CodeOutlined,
+  MessageOutlined,
+  CalendarOutlined
+} from '@ant-design/icons'
+import styles from './About.module.css'
+
+const { Title, Text, Paragraph } = Typography
+
+export default function About() {
+  return (
+		<Card
+			title={
+				<Space>
+					<InfoCircleOutlined />
+					<span>О проекте</span>
+				</Space>
+			}
+			bordered={false}
+		>
+			<div className={styles.aboutContainer}>
+				{/* Что это? */}
+				<div className={styles.section}>
+					<Title level={4}>
+						<RocketOutlined style={{ marginRight: '8px' }} />
+						Что это?
+					</Title>
+					<Paragraph>
+						Лыжный Рейтинг Друзей — это платформа для сравнения результатов в
+						лыжных заездах среди друзей. Отслеживайте свои результаты и
+						прогресс!
+					</Paragraph>
+				</div>
+
+				{/* Как это работает? */}
+				<div className={styles.section}>
+					<Title level={4}>Как это работает?</Title>
+					<List
+						size='small'
+						dataSource={[
+							'Добавляйте заезды — вводите время и загружайте GPX треки',
+							'Редактируйте заезды — обновляйте время, модель лыж, добавляйте GPX треки',
+							'Сравнивайте результаты — смотрите таблицу лидеров',
+							'Подтверждайте заезды — GPX файлы добавляют статус "Подтверждено"',
+							'Анализируйте прогресс — отслеживайте улучшение результатов',
+						]}
+						renderItem={item => (
+							<List.Item>
+								<Text>• {item}</Text>
+							</List.Item>
+						)}
+					/>
+				</div>
+
+				{/* Конфиденциальность */}
+				<div className={styles.section}>
+					<Title level={4}>Конфиденциальность</Title>
+					<Paragraph>
+						Вы можете выбрать уровень видимости своих результатов:
+					</Paragraph>
+					<List
+						size='small'
+						dataSource={[
+							{
+								icon: <EyeOutlined style={{ color: '#52c41a' }} />,
+								title: 'Публичный',
+								desc: 'Все видят ваше имя и результаты',
+							},
+							{
+								icon: <EyeInvisibleOutlined style={{ color: '#fa8c16' }} />,
+								title: 'Анонимный',
+								desc: 'Вас показывают как "Лыжник №X"',
+							},
+						]}
+						renderItem={item => (
+							<List.Item>
+								<Space>
+									{item.icon}
+									<div>
+										<Text strong>{item.title}</Text>
+										<br />
+										<Text type='secondary'>{item.desc}</Text>
+									</div>
+								</Space>
+							</List.Item>
+						)}
+					/>
+				</div>
+
+				{/* Новости проекта */}
+				<div className={styles.newsSection}>
+					<Title level={4}>
+						<CalendarOutlined style={{ marginRight: '8px' }} />
+						Новости проекта
+					</Title>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>27 декабря 2025</div>
+						<div className={styles.newsTitle}>
+							Добавлено редактирование заездов
+						</div>
+						<div className={styles.newsContent}>
+							Теперь можно редактировать свои заезды: обновлять время, модель
+							лыж, добавлять или удалять GPX треки. Для каждого заезда можно
+							указать свою модель лыж.
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>24 декабря 2025</div>
+						<div className={styles.newsTitle}>
+							Добавлены настройки конфиденциальности
+						</div>
+						<div className={styles.newsContent}>
+							Теперь можно выбрать, как показывать ваши результаты: публично или
+							анонимно. В анонимном режиме вы отображаетесь как "Лыжник №X".
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>23 декабря 2025</div>
+						<div className={styles.newsTitle}>Загрузка GPX треков</div>
+						<div className={styles.newsContent}>
+							Добавлена возможность загружать GPX файлы для подтверждения
+							заездов. Заезды с треками отмечаются как "Подтвержденные".
+							Исправлена загрузка файлов с кириллическими именами.
+						</div>
+					</div>
+
+					<div className={styles.newsItem}>
+						<div className={styles.newsDate}>21 декабря 2025</div>
+						<div className={styles.newsTitle}>Запуск проекта</div>
+						<div className={styles.newsContent}>
+							Проект успешно запущен под названием "Лыжный Рейтинг Друзей".
+						</div>
+					</div>
+				</div>
+
+				{/* Технологии */}
+
+				{/* Контакты */}
+				{/* Контакты - отдельно с отступом */}
+				<div className={`${styles.section} ${styles.contactsSection}`}>
+					<Title level={4}>
+						<MessageOutlined style={{ marginRight: '8px' }} />
+						Контакты
+					</Title>
+					<Paragraph>
+						<Space>
+							Есть вопросы или предложения? Для связи: телеграм
+							<a
+								href='https://t.me/titov_films'
+								target='_blank'
+								rel='noopener noreferrer'
+								className={styles.telegramLink}
+							>
+								@titov_films
+							</a>
+						</Space>
+					</Paragraph>
+				</div>
+
+				{/* Технологии */}
+				<div className={styles.techSection}>
+					<Text type='secondary' className={styles.techText}>
+						<CodeOutlined style={{ marginRight: '6px' }} />
+						Технологии: React • Ant Design • Supabase • Vercel
+					</Text>
+				</div>
+			</div>
+		</Card>
+	)
+}```
+
+## 📄 src/widgets/about/index.js
+```
+export { default as About } from "./ui/About"
+```
+
+## 📄 src/widgets/Map/ui/GpxLayer.jsx
+```
+import React, { useEffect, useState } from 'react'
+import L from 'leaflet'
+import 'leaflet-gpx'
+import { supabase } from '../../../shared/api/supabase'
+import { Spin, Alert } from 'antd'
+import { LoadingOutlined } from '@ant-design/icons'
+
+const GpxLayer = ({ map }) => {
+	const [loading, setLoading] = useState(true)
+	const [gpxLayers, setGpxLayers] = useState([])
+	const [error, setError] = useState(null)
+
+	useEffect(() => {
+		if (!map) return
+
+		const loadGpxTracks = async () => {
+			try {
+				setLoading(true)
+
+				// Получаем все заезды с GPX файлами
+				const { data: lapTimes, error: dbError } = await supabase
+					.from('lap_times')
+					.select('*')
+					.not('gpx_track_url', 'is', null)
+					.order('date', { ascending: false })
+
+				if (dbError) throw dbError
+
+				console.log('Найдено GPX треков:', lapTimes.length)
+				const layers = []
+
+				// Для каждого GPX файла создаем слой
+				lapTimes.forEach(lap => {
+					if (lap.gpx_track_url && lap.gpx_track_url.startsWith('http')) {
+						try {
+							// Определяем цвет в зависимости от возраста трека
+							const trackDate = new Date(lap.date)
+							const now = new Date()
+							const hoursDiff = (now - trackDate) / (1000 * 60 * 60)
+
+							let color = '#52c41a' // зеленый - свежий (< 24ч)
+							let opacity = 0.8
+
+							if (hoursDiff > 24 * 7) {
+								// старше недели
+								color = '#1890ff'
+								opacity = 0.3
+							} else if (hoursDiff > 24) {
+								// старше суток
+								color = '#faad14'
+								opacity = 0.5
+							}
+
+							// Создаем GPX слой БЕЗ иконок маркеров
+const gpxLayer = new L.GPX(lap.gpx_track_url, {
+	async: true,
+	polyline_options: {
+		color: color,
+		weight: 4,
+		opacity: opacity,
+		lineCap: 'round',
+	},
+	marker_options: null, // Полностью отключаем маркеры
+})
+
+
+							// Добавляем popup с информацией ИЗ БАЗЫ ДАННЫХ, а не из GPX
+							gpxLayer.on('loaded', function (e) {
+								// Форматируем время из seconds в MM:SS
+								const minutes = Math.floor(lap.time_seconds / 60)
+								const seconds = lap.time_seconds % 60
+								const timeFormatted = `${minutes}:${seconds
+									.toString()
+									.padStart(2, '0')}`
+
+								// Форматируем дату
+								const dateFormatted = new Date(lap.date).toLocaleDateString(
+									'ru-RU'
+								)
+
+								// Используем user_name из базы, а не из GPX
+								const userName = lap.user_name || 'Аноним'
+
+								gpxLayer.bindPopup(`
+                  <div style="min-width: 200px">
+                    <b>${userName}</b><br>
+                    Время заезда: ${timeFormatted}<br>
+                    Дата: ${dateFormatted}<br>
+                    Лыжи: ${lap.ski_model || 'не указаны'}<br>
+                    ${lap.comment ? `Комментарий: ${lap.comment}` : ''}
+                    <hr style="margin: 5px 0">
+                    <small><i>Дистанция из GPX: ${(
+											e.target.get_distance() / 1000
+										).toFixed(2)} км</i></small>
+                  </div>
+                `)
+							})
+
+							gpxLayer.addTo(map)
+							layers.push(gpxLayer)
+						} catch (gpxError) {
+							console.error(`Ошибка загрузки GPX ${lap.id}:`, gpxError)
+						}
+					}
+				})
+
+				setGpxLayers(layers)
+				setLoading(false)
+			} catch (err) {
+				console.error('Ошибка загрузки треков:', err)
+				setError('Не удалось загрузить треки')
+				setLoading(false)
+			}
+		}
+
+		loadGpxTracks()
+
+		// Очистка при размонтировании
+		return () => {
+			gpxLayers.forEach(layer => {
+				if (layer && map.hasLayer(layer)) {
+					map.removeLayer(layer)
+				}
+			})
+		}
+	}, [map])
+
+	if (loading) {
+		return (
+			<div
+				style={{
+					position: 'absolute',
+					top: '10px',
+					right: '10px',
+					zIndex: 1000,
+					background: 'rgba(255,255,255,0.9)',
+					padding: '10px',
+					borderRadius: '4px',
+					boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+				}}
+			>
+				<Spin indicator={<LoadingOutlined style={{ fontSize: 16 }} spin />} />
+				<span style={{ marginLeft: '8px' }}>Загрузка треков...</span>
+			</div>
+		)
+	}
+
+	if (error) {
+		return (
+			<div
+				style={{
+					position: 'absolute',
+					top: '10px',
+					right: '10px',
+					zIndex: 1000,
+				}}
+			>
+				<Alert message={error} type='error' showIcon />
+			</div>
+		)
+	}
+
+	return (
+		<div
+			style={{
+				position: 'absolute',
+				top: '10px',
+				right: '10px',
+				zIndex: 1000,
+				background: 'rgba(255,255,255,0.9)',
+				padding: '10px',
+				borderRadius: '4px',
+				boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+				fontSize: '12px',
+			}}
+		>
+			Треков на карте: {gpxLayers.length}
+		</div>
+	)
+}
+
+export default GpxLayer
+```
+
+## 📄 src/widgets/Map/ui/TrailMarksDisplay.jsx
+```
+import React, { useEffect, useState } from 'react'
+import L from 'leaflet'
+import { supabase } from '../../../shared/api/supabase'
+import { Alert } from 'antd'
+
+const TrailMarksDisplay = ({ map }) => {
+	const [marks, setMarks] = useState([])
+	const [error, setError] = useState(null)
+
+	// Стили для разных категорий
+	const categoryStyles = {
+		dangerous_turn: { color: '#f5222d', icon: '⚠️' },
+		steep_slope: { color: '#fa8c16', icon: '⛰️' },
+		branches: { color: '#faad14', icon: '🌿' },
+		sand: { color: '#d48806', icon: '🏖️' },
+		loggers: { color: '#722ed1', icon: '🚜' },
+		untrodden: { color: '#13c2c2', icon: '❄️' },
+		perfect: { color: '#52c41a', icon: '⭐' },
+		other: { color: '#1890ff', icon: '📍' },
+	}
+
+	useEffect(() => {
+		if (!map) return
+
+
+
+		const loadAndDisplayMarks = async () => {
+			try {
+				console.log('Загрузка меток для отображения...')
+
+				// 1. Загружаем метки из базы ВМЕСТЕ с координатами в GeoJSON
+				const { data, error } = await supabase
+					.from('trail_marks')
+					.select(
+						`
+        *,
+        geometry:st_asgeojson(geometry)  // КОНВЕРТИРУЕМ В GEOJSON!
+      `
+					)
+					.order('created_at', { ascending: false })
+
+				if (error) throw error
+
+				console.log('Загружено меток из базы:', data?.length || 0)
+				console.log('Пример geometry:', data?.[0]?.geometry)
+
+				const layers = []
+
+				// 2. Отображаем каждую метку
+				data?.forEach(mark => {
+					try {
+						const style = categoryStyles[mark.category] || categoryStyles.other
+						const isTemporary = mark.type === 'temporary'
+
+						// Проверяем не истек ли срок
+						const isExpired =
+							mark.expiry_time && new Date(mark.expiry_time) < new Date()
+						if (isExpired) return
+
+						// Парсим GeoJSON из базы
+						let coordinates = []
+
+						if (mark.geometry && typeof mark.geometry === 'string') {
+							try {
+								// Парсим GeoJSON строку
+								const geoJson = JSON.parse(mark.geometry)
+
+								if (geoJson.type === 'LineString' && geoJson.coordinates) {
+									// GeoJSON хранит [lng, lat], Leaflet нужны [lat, lng]
+									coordinates = geoJson.coordinates.map(coord => [
+										coord[1],
+										coord[0],
+									])
+									console.log(`Метка ${mark.id}:`, coordinates.length, 'точек')
+								}
+							} catch (parseError) {
+								console.error(
+									'Ошибка парсинга GeoJSON для метки',
+									mark.id,
+									':',
+									parseError,
+									mark.geometry
+								)
+							}
+						}
+
+						if (coordinates.length < 2) {
+							console.log(
+								'Недостаточно координат для метки:',
+								mark.id,
+								'Использую тестовые'
+							)
+							// Тестовые координаты ВБЛИЗИ центра трассы
+							const offset = Math.random() * 0.01 // Случайное смещение
+							coordinates = [
+								[52.4169 + offset, 103.7388 + offset],
+								[52.417 + offset, 103.739 + offset],
+							]
+						}
+
+						// Создаем линию на карте
+						const line = L.polyline(coordinates, {
+							color: style.color,
+							weight: isTemporary ? 3 : 4,
+							opacity: isTemporary ? 0.6 : 0.8,
+							dashArray: isTemporary ? '5, 10' : null, // ПУНКТИР ТОЛЬКО ДЛЯ ВРЕМЕННЫХ
+						}).addTo(map)
+
+						// Popup с информацией
+						const popupContent = `
+          <div style="min-width: 200px; padding: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+              <span style="font-size: 24px">${style.icon}</span>
+              <div>
+                <strong style="font-size: 16px">${getCategoryLabel(
+									mark.category
+								)}</strong>
+                <div style="font-size: 12px; color: #666;">
+                  ${mark.type === 'permanent' ? 'Постоянная' : 'Временная'}
+                  ${
+										mark.expiry_time
+											? ` • до ${new Date(mark.expiry_time).toLocaleTimeString(
+													'ru-RU',
+													{ hour: '2-digit', minute: '2-digit' }
+											  )}`
+											: ''
+									}
+                </div>
+              </div>
+            </div>
+            ${
+							mark.description
+								? `<p style="margin: 10px 0; font-size: 14px;">${mark.description}</p>`
+								: ''
+						}
+            <div style="font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 8px;">
+              <div>👤 ${mark.created_by_username || 'Аноним'}</div>
+              <div>🕐 ${new Date(mark.created_at).toLocaleString('ru-RU')}</div>
+              ${
+								mark.confirmed_count
+									? `<div>✅ Подтверждений: ${mark.confirmed_count}</div>`
+									: ''
+							}
+            </div>
+          </div>
+        `
+
+						line.bindPopup(popupContent)
+						layers.push(line)
+					} catch (markError) {
+						console.error('Ошибка отображения метки', mark.id, ':', markError)
+					}
+				})
+
+				setMarks(layers)
+				console.log('Отображено меток на карте:', layers.length)
+			} catch (err) {
+				console.error('Ошибка загрузки меток:', err)
+				setError('Не удалось загрузить метки: ' + err.message)
+			}
+		}
+
+		// Загружаем с небольшой задержкой чтобы карта успела инициализироваться
+		setTimeout(loadAndDisplayMarks, 500)
+
+		// Очистка
+		return () => {
+			marks.forEach(layer => {
+				if (layer && map.hasLayer(layer)) {
+					map.removeLayer(layer)
+				}
+			})
+		}
+	}, [map])
+
+	const getCategoryLabel = category => {
+		const labels = {
+			dangerous_turn: 'Опасный поворот',
+			steep_slope: 'Крутой склон',
+			branches: 'Ветки на трассе',
+			sand: 'Песок/грунт',
+			loggers: 'Следы лесовозов',
+			untrodden: 'Незатроплено',
+			perfect: 'Идеально',
+			other: 'Другое',
+		}
+		return labels[category] || category
+	}
+
+	if (error) {
+		return (
+			<div
+				style={{
+					position: 'absolute',
+					top: '60px',
+					right: '20px',
+					zIndex: 1000,
+					maxWidth: '250px',
+				}}
+			>
+				<Alert message='Ошибка' description={error} type='error' showIcon />
+			</div>
+		)
+	}
+
+	return (
+		<div
+			style={{
+				position: 'absolute',
+				top: '60px',
+				right: '20px',
+				zIndex: 1000,
+				background: 'rgba(255, 255, 255, 0.9)',
+				padding: '10px 15px',
+				borderRadius: '8px',
+				boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+				fontSize: '12px',
+				border: '1px solid #1890ff',
+			}}
+		>
+			📍 Меток на карте: {marks.length}
+		</div>
+	)
+}
+
+export default TrailMarksDisplay
+```
+
+## 📄 src/widgets/Map/ui/MapClickMenu.jsx
+```
+import React, { useState } from 'react'
+import { FloatButton, Modal, Form, Input, Select, Radio, message } from 'antd'
+import { PlusOutlined, EnvironmentOutlined } from '@ant-design/icons'
+import L from 'leaflet'
+import { supabase } from '../../../shared/api/supabase'
+import styles from './MapClickMenu.module.css'
+
+const { Option } = Select
+const { TextArea } = Input
+
+const MapClickMenu = ({ map, user }) => {
+	const [clickPosition, setClickPosition] = useState(null)
+	const [modalVisible, setModalVisible] = useState(false)
+	const [drawingMode, setDrawingMode] = useState(false)
+	const [currentLine, setCurrentLine] = useState([])
+	const [form] = Form.useForm()
+
+	const categories = [
+		{ value: 'dangerous_turn', label: 'Опасный поворот', icon: '⚠️' },
+		{ value: 'steep_slope', label: 'Крутой склон', icon: '⛰️' },
+		{ value: 'branches', label: 'Ветки на трассе', icon: '🌿' },
+		{ value: 'sand', label: 'Песок/грунт', icon: '🏖️' },
+		{ value: 'loggers', label: 'Следы лесовозов', icon: '🚜' },
+		{ value: 'untrodden', label: 'Незатроплено', icon: '❄️' },
+		{ value: 'perfect', label: 'Идеально', icon: '⭐' },
+		{ value: 'other', label: 'Другое', icon: '📍' },
+	]
+
+	// Инициализация обработчиков кликов
+	React.useEffect(() => {
+		if (!map) return
+
+		const handleMapClick = e => {
+			setClickPosition(e.latlng)
+
+			// Показываем всплывающее меню
+			if (!drawingMode) {
+				showContextMenu(e)
+			} 
+		}
+
+		map.on('click', handleMapClick)
+
+		return () => {
+			map.off('click', handleMapClick)
+		}
+	}, [map, drawingMode])
+
+	const showContextMenu = e => {
+		// Создаем всплывающее меню
+		const menu = L.popup()
+			.setLatLng(e.latlng)
+			.setContent(
+				`
+        <div class="${styles.contextMenu}">
+          <h4>Добавить метку</h4>
+          <button onclick="window.addMarkerAtPoint('point', ${e.latlng.lat}, ${e.latlng.lng})">
+            📍 Точку
+          </button>
+          <button onclick="window.addMarkerAtPoint('line_start', ${e.latlng.lat}, ${e.latlng.lng})">
+            📏 Участок трассы
+          </button>
+          <button onclick="window.cancelMarker()">
+            ❌ Отмена
+          </button>
+        </div>
+      `
+			)
+			.openOn(map)
+
+		// Глобальные функции для кнопок
+		window.addMarkerAtPoint = (type, lat, lng) => {
+			map.closePopup()
+			if (type === 'line_start') {
+				startDrawing([lat, lng])
+			} else {
+				setClickPosition({ lat, lng })
+				setModalVisible(true)
+			}
+		}
+
+		window.cancelMarker = () => {
+			map.closePopup()
+		}
+	}
+
+	const startDrawing = startPoint => {
+		setDrawingMode(true)
+		setCurrentLine([startPoint])
+
+		message.info(
+			'Режим рисования: кликайте для добавления точек, двойной клик для завершения'
+		)
+
+		// Временная линия
+		if (window.tempLine) {
+			map.removeLayer(window.tempLine)
+		}
+
+		// Обработчик для рисования
+		const drawingClickHandler = e => {
+			setCurrentLine(prev => {
+				const newLine = [...prev, [e.latlng.lat, e.latlng.lng]]
+
+				// Обновляем временную линию
+				if (window.tempLine) {
+					map.removeLayer(window.tempLine)
+				}
+
+				if (newLine.length > 1) {
+					window.tempLine = L.polyline(newLine, {
+						color: '#ff0000',
+						weight: 3,
+						dashArray: '5, 10',
+						opacity: 0.7,
+					}).addTo(map)
+				}
+
+				return newLine
+			})
+		}
+
+		// Обработчик двойного клика для завершения
+		const finishDrawingHandler = e => {
+			e.originalEvent.stopPropagation()
+			if (currentLine.length >= 2) {
+				finishDrawing()
+			}
+		}
+
+		map.on('click', drawingClickHandler)
+		map.on('dblclick', finishDrawingHandler)
+
+		window.currentDrawingHandlers = {
+			click: drawingClickHandler,
+			dblclick: finishDrawingHandler,
+		}
+	}
+
+	const finishDrawing = () => {
+		setDrawingMode(false)
+		setModalVisible(true)
+
+		// Убираем обработчики
+		if (window.currentDrawingHandlers) {
+			map.off('click', window.currentDrawingHandlers.click)
+			map.off('dblclick', window.currentDrawingHandlers.dblclick)
+			window.currentDrawingHandlers = null
+		}
+
+		// Убираем временную линию
+		if (window.tempLine) {
+			map.removeLayer(window.tempLine)
+			window.tempLine = null
+		}
+	}
+
+	const handleFormSubmit = async values => {
+		try {
+			let geometry
+
+			if (currentLine.length > 0) {
+				// Линия из точек
+				const coordinates = currentLine
+					.map(coord => `${coord[1]} ${coord[0]}`)
+					.join(', ')
+				geometry = `LINESTRING(${coordinates})`
+			} else if (clickPosition) {
+				// Одиночная точка (делаем маленький отрезок)
+				const lat = clickPosition.lat
+				const lng = clickPosition.lng
+				geometry = `LINESTRING(${lng} ${lat}, ${lng + 0.0001} ${lat + 0.0001})`
+			} else {
+				throw new Error('Нет координат для метки')
+			}
+
+			const expiryTime =
+				values.type === 'temporary'
+					? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+					: null
+
+			const { data, error } = await supabase
+				.from('trail_marks')
+				.insert({
+					user_id: user?.id,
+					type: values.type,
+					category: values.category,
+					geometry: geometry,
+					description: values.description,
+					expiry_time: expiryTime,
+					created_by_username: user?.email?.split('@')[0] || 'Аноним',
+					confirmed_count: 0,
+				})
+				.select()
+
+			if (error) throw error
+
+			message.success('Метка добавлена!')
+			setModalVisible(false)
+			form.resetFields()
+			setCurrentLine([])
+			setClickPosition(null)
+
+			// Показываем метку на карте
+			if (data && data[0]) {
+				showMarkOnMap(data[0])
+			}
+		} catch (error) {
+			console.error('Ошибка сохранения:', error)
+			message.error('Ошибка: ' + error.message)
+		}
+	}
+
+	const showMarkOnMap = mark => {
+		if (!map) return
+
+		const style =
+			mark.type === 'permanent'
+				? { color: '#f5222d', weight: 4, opacity: 0.8 }
+				: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
+
+		// TODO: Парсинг geometry из базы
+		// Пока временная визуализация
+		const line = L.polyline(
+			[
+				[52.4169, 103.7388],
+				[52.417, 103.739],
+			],
+			style
+		).addTo(map)
+
+		const category = categories.find(c => c.value === mark.category)
+		line.bindPopup(`
+      <div class="${styles.markPopup}">
+        <div style="font-size: 20px; margin-bottom: 5px">${
+					category?.icon || '📍'
+				}</div>
+        <strong>${category?.label || mark.category}</strong><br>
+        ${mark.description || ''}
+      </div>
+    `)
+	}
+
+	return (
+		<>
+			{/* Плавающая кнопка для быстрого доступа */}
+			<div className={styles.floatButtonContainer}>
+				<FloatButton
+					icon={<EnvironmentOutlined />}
+					type='primary'
+					tooltip='Добавить метку на карту'
+					onClick={() => {
+						if (map) {
+							const center = map.getCenter()
+							showContextMenu({ latlng: center })
+						}
+					}}
+					className={styles.floatButton}
+				/>
+			</div>
+
+			<Modal
+				title={
+					currentLine.length > 0
+						? 'Добавить метку участка'
+						: 'Добавить метку точки'
+				}
+				open={modalVisible}
+				onCancel={() => {
+					setModalVisible(false)
+					setCurrentLine([])
+					setClickPosition(null)
+				}}
+				onOk={() => form.submit()}
+				okText='Сохранить'
+				cancelText='Отмена'
+				width={500}
+			>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleFormSubmit}
+					initialValues={{
+						type: 'temporary',
+						category: 'branches',
+					}}
+				>
+					<Form.Item name='type' label='Тип метки' rules={[{ required: true }]}>
+						<Radio.Group>
+							<Radio value='permanent'>Постоянная</Radio>
+							<Radio value='temporary'>Временная (24ч)</Radio>
+						</Radio.Group>
+					</Form.Item>
+
+					<Form.Item
+						name='category'
+						label='Что на трассе?'
+						rules={[{ required: true }]}
+					>
+						<Select placeholder='Выберите тип проблемы'>
+							{categories.map(cat => (
+								<Option key={cat.value} value={cat.value}>
+									<span style={{ marginRight: 8 }}>{cat.icon}</span>
+									{cat.label}
+								</Option>
+							))}
+						</Select>
+					</Form.Item>
+
+					<Form.Item name='description' label='Описание (необязательно)'>
+						<TextArea
+							placeholder='Подробности: глубина снега, состояние трассы и т.д.'
+							rows={3}
+						/>
+					</Form.Item>
+
+					<div className={styles.coordinatesInfo}>
+						{currentLine.length > 0 ? (
+							<p>Участок: {currentLine.length} точек</p>
+						) : clickPosition ? (
+							<p>
+								Точка: {clickPosition.lat.toFixed(6)},{' '}
+								{clickPosition.lng.toFixed(6)}
+							</p>
+						) : null}
+					</div>
+				</Form>
+			</Modal>
+		</>
+	)
+}
+
+export default MapClickMenu
+```
+
+## 📄 src/widgets/Map/ui/MapClickMenu.module.css
+```
+.contextMenu {
+  padding: 10px;
+  min-width: 200px;
+}
+
+.contextMenu h4 {
+  margin: 0 0 10px 0;
+  color: #1890ff;
+}
+
+.contextMenu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.contextMenu button:hover {
+  background: #1890ff;
+  color: white;
+  border-color: #1890ff;
+}
+
+.markPopup {
+  min-width: 200px;
+  font-size: 14px;
+}
+
+.coordinatesInfo {
+  padding: 10px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #389e0d;
+}
+
+.floatButton {
+  position: absolute;
+  bottom: 100px;
+  right: 24px;
+  z-index: 1000;
+}
+
+.floatButtonContainer {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.floatButton {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.floatButton:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s;
+}```
+
+## 📄 src/widgets/Map/ui/MarkControls.jsx
+```
+import React, { useState } from 'react';
+import { Button, Modal, Form, Input, Select, Alert, Radio, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import L from 'leaflet';
+import { supabase } from '../../../shared/api/supabase';
+
+const { Option } = Select;
+const { TextArea } = Input;
+
+const MarkControls = ({ map, user, onMarkAdded }) => {
+	const [drawing, setDrawing] = useState(false)
+	const [currentLine, setCurrentLine] = useState([])
+	const [modalVisible, setModalVisible] = useState(false)
+	const [form] = Form.useForm()
+
+	const categories = [
+		{ value: 'dangerous_turn', label: 'Опасный поворот' },
+		{ value: 'steep_slope', label: 'Крутой склон' },
+		{ value: 'branches', label: 'Ветки на трассе' },
+		{ value: 'sand', label: 'Песок/грунт' },
+		{ value: 'loggers', label: 'Следы лесовозов' },
+		{ value: 'untrodden', label: 'Незатроплено' },
+		{ value: 'perfect', label: 'Идеально' },
+		{ value: 'other', label: 'Другое' },
+	]
+
+	const startDrawing = () => {
+		if (!map) return
+
+		setDrawing(true)
+		setCurrentLine([])
+		console.log('Начало рисования метки')
+
+		// Очищаем временные элементы
+		if (window.tempLine) {
+			map.removeLayer(window.tempLine)
+			window.tempLine = null
+		}
+
+		// Новый обработчик клика
+		// Новый обработчик клика
+		const handleClick = e => {
+			e.originalEvent.stopPropagation()
+			const { lat, lng } = e.latlng
+
+			console.log(`Добавлена точка:`, lat, lng)
+
+			// Используем функциональное обновление чтобы получить актуальное состояние
+			setCurrentLine(prev => {
+				const newLine = [...prev, [lat, lng]]
+
+				// Рисуем/обновляем временную линию
+				if (window.tempLine) {
+					map.removeLayer(window.tempLine)
+				}
+
+				if (newLine.length > 1) {
+					window.tempLine = L.polyline(newLine, {
+						color: '#ff0000',
+						weight: 3,
+						dashArray: '5, 10',
+						opacity: 0.7,
+					}).addTo(map)
+				}
+
+				console.log(`Точки линии:`, newLine.length, newLine)
+
+				// Обновляем текст в инструкции
+				if (window.drawingInstructions) {
+					updateInstructionsCount(newLine.length)
+				}
+
+				return newLine
+			})
+		}
+
+		// Обработчик двойного клика для завершения
+	// Обработчик двойного клика для завершения
+const handleDblClick = (e) => {
+  e.originalEvent.stopPropagation();
+  
+  // Проверяем текущую длину через setTimeout, чтобы состояние обновилось
+  setTimeout(() => {
+    console.log('Двойной клик - завершение, текущих точек:', currentLine.length);
+    
+    if (currentLine.length >= 2) {
+      finishDrawing();
+    } else {
+      console.log('Нужно как минимум 2 точки!');
+      alert('Нужно как минимум 2 точки! Добавьте еще точки кликами.');
+    }
+  }, 0);
+};
+
+		// Сохраняем текущие обработчики
+		const originalClick = map._handlers?.click || []
+		const originalDblClick = map._handlers?.dblclick || []
+
+		// Отключаем текущие обработчики
+		if (originalClick.length > 0) {
+			originalClick.forEach(handler => map.off('click', handler))
+		}
+		if (originalDblClick.length > 0) {
+			originalDblClick.forEach(handler => map.off('dblclick', handler))
+		}
+
+		// Вешаем наши обработчики
+		map.on('click', handleClick)
+		map.on('dblclick', handleDblClick)
+
+		// Сохраняем для восстановления
+		window.currentDrawingHandlers = {
+			click: handleClick,
+			dblclick: handleDblClick,
+			originalClick: originalClick,
+			originalDblClick: originalDblClick,
+		}
+
+		// Показываем инструкцию
+		showDrawingInstructions()
+	}
+
+	const finishDrawing = () => {
+		console.log('Завершение рисования, проверка точек:', currentLine.length)
+
+		if (!map || currentLine.length < 2) {
+			console.log('Ошибка: меньше 2 точек')
+			if (currentLine.length < 2) {
+				alert('Ошибка: нужно как минимум 2 точки для метки!')
+			}
+			return
+		}
+
+		setDrawing(false)
+
+		// Убираем временную линию
+		if (window.tempLine) {
+			map.removeLayer(window.tempLine)
+			window.tempLine = null
+		}
+
+		// Восстанавливаем оригинальные обработчики
+		if (window.currentDrawingHandlers) {
+			map.off('click', window.currentDrawingHandlers.click)
+			map.off('dblclick', window.currentDrawingHandlers.dblclick)
+
+			if (window.currentDrawingHandlers.originalClick) {
+				window.currentDrawingHandlers.originalClick.forEach(handler => {
+					map.on('click', handler)
+				})
+			}
+			if (window.currentDrawingHandlers.originalDblClick) {
+				window.currentDrawingHandlers.originalDblClick.forEach(handler => {
+					map.on('dblclick', handler)
+				})
+			}
+
+			window.currentDrawingHandlers = null
+		}
+
+		// Убираем инструкцию
+		removeDrawingInstructions()
+
+		// Показываем финальную линию
+		if (currentLine.length >= 2) {
+			const finalLine = L.polyline(currentLine, {
+				color: '#52c41a',
+				weight: 4,
+				opacity: 0.8,
+			}).addTo(map)
+
+			// Центрируем карту на линии
+			const bounds = finalLine.getBounds()
+			map.fitBounds(bounds.pad(0.1))
+
+			setTimeout(() => {
+				setModalVisible(true)
+			}, 500)
+		}
+	}
+
+	const cancelDrawing = () => {
+		setDrawing(false)
+		setCurrentLine([])
+
+		if (window.tempLine) {
+			map.removeLayer(window.tempLine)
+			window.tempLine = null
+		}
+
+		if (window.currentDrawingHandlers) {
+			map.off('click', window.currentDrawingHandlers.click)
+			map.off('dblclick', window.currentDrawingHandlers.dblclick)
+
+			if (window.currentDrawingHandlers.originalClick) {
+				window.currentDrawingHandlers.originalClick.forEach(handler => {
+					map.on('click', handler)
+				})
+			}
+			if (window.currentDrawingHandlers.originalDblClick) {
+				window.currentDrawingHandlers.originalDblClick.forEach(handler => {
+					map.on('dblclick', handler)
+				})
+			}
+
+			window.currentDrawingHandlers = null
+		}
+
+		removeDrawingInstructions()
+	}
+
+	// Вспомогательные функции
+	const showDrawingInstructions = () => {
+		if (!map) return
+
+		removeDrawingInstructions()
+
+		window.drawingInstructions = L.control({ position: 'topright' })
+		window.drawingInstructions.onAdd = function () {
+			const div = L.DomUtil.create('div', 'drawing-instructions')
+			div.innerHTML = `
+        <div style="
+          background: white; 
+          padding: 12px; 
+          border-radius: 6px; 
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          border: 2px solid #1890ff;
+          max-width: 200px;
+          font-size: 13px;
+        ">
+          <div style="color: #1890ff; font-weight: bold; margin-bottom: 8px;">
+            �� Рисование метки (точек: ${currentLine.length})
+          </div>
+          <div style="margin-bottom: 6px;">• <strong>Клик</strong> - добавить точку</div>
+          <div style="margin-bottom: 8px;">• <strong>Двойной клик</strong> - завершить</div>
+          
+          <button 
+            id="finish-drawing-btn" 
+            style="
+              width: 100%; 
+              padding: 6px; 
+              background: #52c41a; 
+              color: white; 
+              border: none; 
+              border-radius: 4px; 
+              cursor: pointer;
+              font-weight: bold;
+              margin-bottom: 5px;
+            "
+          >
+            ✓ Завершить (${currentLine.length} точек)
+          </button>
+          
+          <button 
+            id="cancel-drawing-btn" 
+            style="
+              width: 100%; 
+              padding: 6px; 
+              background: #ff4d4f; 
+              color: white; 
+              border: none; 
+              border-radius: 4px; 
+              cursor: pointer;
+              font-weight: bold;
+            "
+          >
+            ✕ Отменить
+          </button>
+        </div>
+      `
+
+			return div
+		}
+		window.drawingInstructions.addTo(map)
+
+		// Добавляем обработчики кнопок
+		setTimeout(() => {
+			const finishBtn = document.getElementById('finish-drawing-btn')
+			const cancelBtn = document.getElementById('cancel-drawing-btn')
+
+			if (finishBtn) {
+				finishBtn.onclick = () => {
+					if (currentLine.length >= 2) {
+						finishDrawing()
+					} else {
+						alert(
+							'Нужно как минимум 2 точки! Кликните на карту чтобы добавить точки.'
+						)
+					}
+				}
+			}
+
+			if (cancelBtn) {
+				cancelBtn.onclick = cancelDrawing
+			}
+		}, 100)
+	}
+
+	const removeDrawingInstructions = () => {
+		if (window.drawingInstructions) {
+			map.removeControl(window.drawingInstructions)
+			window.drawingInstructions = null
+		}
+	}
+
+	const handleFormSubmit = async values => {
+		try {
+			console.log('Сохранение метки:', values, currentLine)
+
+			if (currentLine.length < 2) {
+				message.error('Нужно как минимум 2 точки')
+				return
+			}
+
+			// Конвертируем координаты в LineString для PostGIS
+			const coordinates = currentLine
+				.map(coord => `${coord[1]} ${coord[0]}`)
+				.join(', ')
+			const lineString = `LINESTRING(${coordinates})`
+
+			// Срок жизни для временных меток (24 часа)
+			const expiryTime =
+				values.type === 'temporary'
+					? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+					: null
+
+			console.log('LineString для PostGIS:', lineString)
+			console.log('User ID:', user?.id)
+
+			// Сохраняем в базу
+			const { data, error } = await supabase
+				.from('trail_marks')
+				.insert({
+					user_id: user?.id,
+					type: values.type,
+					category: values.category,
+					geometry: lineString,
+					description: values.description,
+					expiry_time: expiryTime,
+					created_by_username: user?.email?.split('@')[0] || 'Аноним',
+					confirmed_count: 0,
+				})
+				.select()
+
+			if (error) {
+				console.error('Supabase ошибка:', error)
+				throw error
+			}
+
+			console.log('Метка сохранена в базу:', data)
+			message.success('Метка успешно добавлена на карту!')
+
+			// Закрываем и сбрасываем
+			setModalVisible(false)
+			form.resetFields()
+			setCurrentLine([])
+
+			// Обновляем метки на карте
+			if (onMarkAdded) {
+				onMarkAdded()
+			}
+		} catch (error) {
+			console.error('Полная ошибка сохранения:', error)
+			message.error('Ошибка при сохранении метки: ' + error.message)
+		}
+	}
+	// Функция для обновления счетчика точек в инструкции
+	const updateInstructionsCount = count => {
+		const instructionsDiv = document.querySelector('.drawing-instructions')
+		if (instructionsDiv) {
+			const countElement = instructionsDiv.querySelector(
+				'[style*="color: #1890ff"]'
+			)
+			if (countElement) {
+				countElement.innerHTML = `🎯 Рисование метки (точек: ${count})`
+			}
+
+			const finishBtn = document.getElementById('finish-drawing-btn')
+			if (finishBtn) {
+				finishBtn.innerHTML = `✓ Завершить (${count} точек)`
+			}
+		}
+	}
+	return (
+		<>
+			<div
+				style={{
+					position: 'absolute',
+					bottom: '20px',
+					left: '50%',
+					transform: 'translateX(-50%)',
+					zIndex: 1000,
+					display: 'flex',
+					gap: '10px',
+				}}
+			>
+				<Button
+					type='primary'
+					icon={<PlusOutlined />}
+					onClick={startDrawing}
+					disabled={drawing}
+					size='large'
+				>
+					Добавить метку на трассу
+				</Button>
+
+				{drawing && (
+					<Button type='default' onClick={cancelDrawing} danger size='large'>
+						Отменить рисование
+					</Button>
+				)}
+			</div>
+
+			<Modal
+				title='Добавить метку на трассу'
+				open={modalVisible}
+				onCancel={() => setModalVisible(false)}
+				onOk={() => form.submit()}
+				okText='Сохранить метку'
+				cancelText='Отмена'
+				width={500}
+			>
+				<Form
+					form={form}
+					layout='vertical'
+					onFinish={handleFormSubmit}
+					initialValues={{
+						type: 'temporary',
+						category: 'branches',
+					}}
+				>
+					<Form.Item name='type' label='Тип метки' rules={[{ required: true }]}>
+						<Radio.Group>
+							<Radio value='permanent'>
+								Постоянная (опасный поворот и т.д.)
+							</Radio>
+							<Radio value='temporary'>Временная (ветки, песок и т.д.)</Radio>
+						</Radio.Group>
+					</Form.Item>
+
+					<Form.Item
+						name='category'
+						label='Категория'
+						rules={[{ required: true }]}
+					>
+						<Select placeholder='Выберите категорию'>
+							{categories.map(cat => (
+								<Option key={cat.value} value={cat.value}>
+									{cat.label}
+								</Option>
+							))}
+						</Select>
+					</Form.Item>
+
+					<Form.Item name='description' label='Описание'>
+						<TextArea
+							placeholder='Подробное описание проблемы или ситуации...'
+							rows={3}
+						/>
+					</Form.Item>
+
+					<Alert
+						message='Информация'
+						description={`Длина участка: ${currentLine.length} точек`}
+						type='info'
+						showIcon
+					/>
+				</Form>
+			</Modal>
+		</>
+	)
+};
+
+export default MarkControls;
+```
+
+## 📄 src/widgets/Map/ui/TrailMarksLayer.jsx
+```
+import React, { useEffect, useState } from 'react'
+import L from 'leaflet'
+import { supabase } from '../../../shared/api/supabase'
+import { Spin } from 'antd'
+import { LoadingOutlined } from '@ant-design/icons'
+
+const TrailMarksLayer = ({ map }) => {
+	const [loading, setLoading] = useState(true)
+	const [marks, setMarks] = useState([])
+
+	// Иконки для разных категорий
+	const categoryStyles = {
+		dangerous_turn: { color: '#f5222d', icon: '⚠️' },
+		steep_slope: { color: '#fa8c16', icon: '⛰️' },
+		branches: { color: '#faad14', icon: '🌿' },
+		sand: { color: '#d48806', icon: '🏖️' },
+		loggers: { color: '#722ed1', icon: '🚜' },
+		untrodden: { color: '#13c2c2', icon: '❄️' },
+		perfect: { color: '#52c41a', icon: '⭐' },
+		other: { color: '#1890ff', icon: '📍' },
+	}
+
+	useEffect(() => {
+		if (!map) return
+
+		const loadMarks = async () => {
+			try {
+				setLoading(true)
+
+				// Получаем все метки
+				const { data, error } = await supabase
+					.from('trail_marks')
+					.select('*')
+					.order('created_at', { ascending: false })
+
+				if (error) throw error
+
+				console.log('Загружено меток:', data?.length || 0)
+
+				const marksLayers = []
+
+				// Отображаем каждую метку на карте
+				data?.forEach(mark => {
+					try {
+						const style = categoryStyles[mark.category] || categoryStyles.other
+
+						// Для постоянных меток - сплошная линия
+						// Для временных - пунктирная
+						const isTemporary = mark.type === 'temporary'
+						const isExpired =
+							mark.expiry_time && new Date(mark.expiry_time) < new Date()
+
+						if (isExpired) return // Не показываем просроченные
+
+						// Создаем линию из геометрии
+						// TODO: Здесь нужно парсить geometry из базы
+						// Пока используем заглушку
+
+						const line = L.polyline(
+							[
+								[52.4169, 103.7388],
+								[52.417, 103.739],
+								[52.4168, 103.7386],
+							],
+							{
+								color: style.color,
+								weight: isTemporary ? 3 : 4,
+								opacity: isTemporary ? 0.6 : 0.8,
+								dashArray: isTemporary ? '5, 10' : null,
+							}
+						).addTo(map)
+
+						// Popup с информацией
+						const popupContent = `
+              <div style="min-width: 200px">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px">
+                  <span style="font-size: 20px">${style.icon}</span>
+                  <strong>${getCategoryLabel(mark.category)}</strong>
+                </div>
+                <div><strong>Тип:</strong> ${
+									mark.type === 'permanent' ? 'Постоянная' : 'Временная'
+								}</div>
+                <div><strong>Добавил:</strong> ${
+									mark.created_by_username || 'Аноним'
+								}</div>
+                ${
+									mark.description
+										? `<div><strong>Описание:</strong> ${mark.description}</div>`
+										: ''
+								}
+                ${
+									mark.expiry_time
+										? `<div><strong>Истекает:</strong> ${new Date(
+												mark.expiry_time
+										  ).toLocaleString('ru-RU')}</div>`
+										: ''
+								}
+                <div><strong>Подтверждений:</strong> ${
+									mark.confirmed_count || 0
+								}</div>
+                <hr style="margin: 8px 0">
+                <small>${new Date(mark.created_at).toLocaleString(
+									'ru-RU'
+								)}</small>
+              </div>
+            `
+
+						line.bindPopup(popupContent)
+						marksLayers.push(line)
+					} catch (markError) {
+						console.error('Ошибка отображения метки:', markError)
+					}
+				})
+
+				setMarks(marksLayers)
+				setLoading(false)
+			} catch (err) {
+				console.error('Ошибка загрузки меток:', err)
+				setLoading(false)
+			}
+		}
+
+		loadMarks()
+
+		// Очистка
+		return () => {
+			marks.forEach(layer => {
+				if (layer && map.hasLayer(layer)) {
+					map.removeLayer(layer)
+				}
+			})
+		}
+	}, [map])
+
+	const getCategoryLabel = category => {
+		const labels = {
+			dangerous_turn: 'Опасный поворот',
+			steep_slope: 'Крутой склон',
+			branches: 'Ветки на трассе',
+			sand: 'Песок/грунт',
+			loggers: 'Следы лесовозов',
+			untrodden: 'Незатроплено',
+			perfect: 'Идеально',
+			other: 'Другое',
+		}
+		return labels[category] || category
+	}
+const renderMark = mark => {
+	if (!map || !mark) return null
+
+	try {
+		// Парсим geometry из базы (пока заглушка)
+		const style =
+			mark.type === 'permanent'
+				? { color: '#f5222d', weight: 4, opacity: 0.8 }
+				: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
+
+		// Временные координаты - потом заменим на парсинг
+		const coordinates = [
+			[52.4169 + Math.random() * 0.001, 103.7388 + Math.random() * 0.001],
+			[52.417 + Math.random() * 0.001, 103.739 + Math.random() * 0.001],
+			[52.4168 + Math.random() * 0.001, 103.7386 + Math.random() * 0.001],
+		]
+
+		const line = L.polyline(coordinates, style).addTo(map)
+
+		const popupContent = `
+      <div style="min-width: 200px">
+        <strong>${mark.category}</strong><br>
+        <div>Тип: ${
+					mark.type === 'permanent' ? 'Постоянная' : 'Временная'
+				}</div>
+        ${mark.description ? `<div>${mark.description}</div>` : ''}
+        <div><small>Добавил: ${
+					mark.created_by_username || 'Аноним'
+				}</small></div>
+        <div><small>${new Date(mark.created_at).toLocaleString(
+					'ru-RU'
+				)}</small></div>
+      </div>
+    `
+
+		line.bindPopup(popupContent)
+		return line
+	} catch (err) {
+		console.error('Ошибка отрисовки метки:', err, mark)
+		return null
+	}
+}
+	if (loading) {
+		return (
+			<div
+				style={{
+					position: 'absolute',
+					top: '50px',
+					right: '10px',
+					zIndex: 1000,
+					background: 'rgba(255,255,255,0.9)',
+					padding: '8px 12px',
+					borderRadius: '4px',
+					boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+					fontSize: '12px',
+				}}
+			>
+				<Spin indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />} />
+				<span style={{ marginLeft: '8px' }}>Загрузка меток...</span>
+			</div>
+		)
+	}
+
+	return (
+		<div
+			style={{
+				position: 'absolute',
+				top: '50px',
+				right: '10px',
+				zIndex: 1000,
+				background: 'rgba(255,255,255,0.9)',
+				padding: '8px 12px',
+				borderRadius: '4px',
+				boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+				fontSize: '12px',
+			}}
+		>
+			Меток на карте: {marks.length}
+		</div>
+	)
+}
+
+export default TrailMarksLayer
+```
+
+## 📄 src/widgets/Map/ui/Map.module.css
+```
+.mapContainer {
+  width: 100%;
+  height: 500px; /* ТОЛЬКО ОДНА ВЫСОТА */
+  min-height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid #f0f0f0;
+  position: relative;
+}
+
+/* УБИРАЕМ ФЛАГ */
+.mapContainer :global(.leaflet-attribution-flag) {
+  display: none !important;
+}
+
+/* Уменьшаем атрибуцию */
+.mapContainer :global(.leaflet-control-attribution) {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #666;
+  border-radius: 3px;
+}
+
+.mapContainer :global(.leaflet-control-attribution a) {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.mapContainer :global(.leaflet-control-attribution a:hover) {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .mapContainer {
+    height: 400px !important; /* !important чтобы переопределить */
+    min-height: 400px !important;
+  }
+  .card {
+    padding: 12px;
+    margin: 0;
+  }
+  
+  .legend {
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .legend h4 {
+    font-size: 14px;
+  }
+  
+  .legend ul {
+    margin: 8px 0;
+  }
+  
+  .legend li {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+}
+
+/* Фикс для загрузки карты - только если пустая */
+.mapContainer:empty {
+  min-height: 400px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}```
+
+## 📄 src/widgets/Map/ui/Map.jsx
+```
+import React, { useEffect, useRef } from 'react'
+import { Card } from 'antd'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import MapClickMenu from './MapClickMenu'
+import styles from './Map.module.css'
+import TrailMarksDisplay from './TrailMarksDisplay'
+
+const Map = ({ user }) => {
+	const mapContainerRef = useRef(null)
+	const mapInstanceRef = useRef(null)
+
+	useEffect(() => {
+		const initMap = () => {
+			if (!mapInstanceRef.current && mapContainerRef.current) {
+				const mapInstance = L.map(mapContainerRef.current).setView(
+					[52.416925, 103.738906],
+					15
+				)
+
+				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					attribution: '© OpenStreetMap',
+					maxZoom: 19,
+				}).addTo(mapInstance)
+
+				mapInstanceRef.current = mapInstance
+			}
+		}
+
+		setTimeout(initMap, 100)
+
+		return () => {
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove()
+				mapInstanceRef.current = null
+			}
+		}
+	}, [])
+
+return (
+	<Card className={styles.card} title='Карта трасс'>
+		<div ref={mapContainerRef} className={styles.mapContainer}>
+			{mapInstanceRef.current && user && (
+				<MapClickMenu map={mapInstanceRef.current} user={user} />
+			)}
+			{mapInstanceRef.current && (
+				<TrailMarksDisplay map={mapInstanceRef.current} />
+			)}
+		</div>
+
+		<div className={styles.legend}>
+			<h4>Легенда:</h4>
+			<ul>
+				<li>🔴 Постоянные метки</li>
+				<li>🟡 Временные метки</li>
+				<li>🟢 Треки заездов</li>
+			</ul>
+		</div>
+	</Card>
+)
+}
+
+export default Map
+```
+
+## 📄 src/widgets/Map/index.js
+```
+import Map from './ui/Map'
+export default Map
+```
+
+```
+
+
+# 🎿 ПОЛНЫЙ КОНТЕКСТ ПРОЕКТА "SKITRACK"
+
+## 📋 **Исходное состояние проекта** (на начало беседы)
+**Приложение полностью рабочее и задеплоено на Vercel!**
+- **Frontend:** React (Create React App) на Vercel Ant-design
+- **Backend:** Supabase (PostgreSQL + Auth + Storage)
+- **Домен:** Лыжный Рейтинг
+- **Функционал:** Аутентификация, таблица заездов, профили, загрузка GPX треков, редактирование заездов
+
+## 🔗 **Ссылки**
+- **Frontend:** `https://ski-leaderboard.vercel.app`
+- **Supabase:** `https://xsqelqxwthjufdwfdecf.supabase.co`
+- **GitHub:** `https://github.com/krik2004/ski-leaderboard`
+
+## 🗃️ **Оригинальная структура базы данных**
+
+### **Таблица `profiles`:**
+```sql
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  ski_model TEXT,
+  visibility_preference VARCHAR(20) DEFAULT 'public' CHECK (visibility_preference IN ('anonymous', 'public')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### **Таблица `lap_times`:**
+```sql
+CREATE TABLE lap_times (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  time_seconds INTEGER NOT NULL CHECK (time_seconds > 0),
+  user_name TEXT,
+  ski_model TEXT,
+  gpx_track_url TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  comment TEXT,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### **Storage bucket:** `gpx-tracks` (публичный)
+
+## 🏗️ **Оригинальная структура проекта React**
+```
+ski-leaderboard/
+src/App.jsx
+src/components/About.jsx
+src/components/About.module.css
+src/components/AddTimeForm.jsx
+src/components/Profile.jsx
+src/features/auth/index.js
+src/features/auth/ui/Auth.jsx
+src/features/auth/ui/Auth.module.css
+src/features/auth/ui/index.js
+src/features/lap-times/index.js
+src/features/lap-times/ui/AddTimeForm.jsx
+src/features/lap-times/ui/AddTimeForm.module.css
+src/features/lap-times/ui/EditTimeForm.jsx
+src/features/profile/index.js
+src/features/profile/ui/Profile.jsx
+src/features/profile/ui/Profile.module.css
+src/index.js
+src/lib/supabase.js
+src/shared/api/supabase.js
+src/styles/App.css
+src/styles/base.css
+src/styles/components.css
+src/styles/utilities.css
+src/supabase.js
+src/widgets/Leaderboard/index.js
+src/widgets/Leaderboard/ui/Leaderboard.jsx
+src/widgets/Leaderboard/ui/Leaderboard.module.css
+src/widgets/about/index.js
+src/widgets/about/ui/About.jsx
+src/widgets/about/ui/About.module.css
+```
+
+---
+
+## 🔄 **ЧТО БЫЛО СДЕЛАНО В ЭТОЙ БЕСЕДЕ**
+
+### 🗺️ **1. ДОБАВЛЕНА ИНТЕРАКТИВНАЯ КАРТА**
+
+**Технологии:** Leaflet + OpenStreetMap + react-leaflet@4.2.1
+
+**Новые компоненты:**
+```
+src/widgets/Map/
+├── index.js
+├── ui/
+│   ├── Map.jsx                    # Основной компонент карты
+│   ├── Map.module.css
+│   ├── GpxLayer.jsx               # Отображение GPX треков
+│   ├── MapClickMenu.jsx           # Контекстное меню добавления меток
+│   ├── MapClickMenu.module.css
+│   ├── TrailMarksDisplay.jsx      # Отображение меток на карте
+│   └── TrailMarksLayer.jsx        # (Устаревший) первоначальный компонент
+```
+
+**Интеграция в App.jsx:**
+- Добавлена вкладка "Карта" с иконкой `<EnvironmentOutlined />`
+- Передача `user` пропса в компонент `Map`
+- Сохранение активной вкладки в localStorage
+
+### 🗃️ **2. СОЗДАНА НОВАЯ ТАБЛИЦА ДЛЯ МЕТОК**
+
+```sql
+CREATE TABLE trail_marks (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('permanent', 'temporary')),
+  category VARCHAR(50) NOT NULL,
+  geometry geometry(LineString, 4326) NOT NULL,
+  description TEXT,
+  expiry_time TIMESTAMP WITH TIME ZONE,
+  confirmed_count INTEGER DEFAULT 0,
+  created_by_username TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS политики:
+ALTER TABLE trail_marks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Все видят метки" ON trail_marks FOR SELECT USING (true);
+CREATE POLICY "Авторизованные добавляют метки" ON trail_marks FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Редактировать свои метки" ON trail_marks FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Удалять свои метки" ON trail_marks FOR DELETE USING (auth.uid() = user_id);
+```
+
+**Категории меток:**
+- `dangerous_turn` - Опасный поворот
+- `steep_slope` - Крутой склон  
+- `branches` - Ветки на трассе
+- `sand` - Песок/грунт
+- `loggers` - Следы лесовозов
+- `untrodden` - Незатроплено
+- `perfect` - Идеально
+- `other` - Другое
+
+### 🎯 **3. РЕАЛИЗОВАН ФУНКЦИОНАЛ ДОБАВЛЕНИЯ МЕТОК**
+
+**Два способа добавления:**
+1. **Точка** - одиночная метка
+2. **Участок трассы** - рисование линии (2+ точек)
+
+**Процесс добавления:**
+1. Клик на карту → всплывающее меню
+2. Выбор типа метки (точка/участок)
+3. Выбор категории и описание
+4. Автоматическое отображение на карте
+
+**Формат хранения geometry:** PostGIS LineString в бинарном формате EWKB
+
+### ⚡ **4. ОТОБРАЖЕНИЕ СУЩЕСТВУЮЩИХ МЕТОК**
+
+**Компонент `TrailMarksDisplay.jsx`:**
+- Загружает метки из таблицы `trail_marks`
+- Парсит бинарный формат PostGIS (EWKB) → GeoJSON → координаты Leaflet
+- Отображает линии с разными стилями:
+  - **Постоянные:** сплошные линии
+  - **Временные:** пунктирные линии (срок жизни 24ч)
+- Popup с информацией: категория, описание, автор, время создания
+
+### 🎨 **5. СТИЛИ И АДАПТИВНОСТЬ**
+
+**Map.module.css:**
+- Фиксированная высота карты: 500px (десктоп), 400px (мобильные)
+- Убрана иконка флага Украины из атрибуции
+- Адаптивный дизайн через медиа-запросы
+
+**Исправления App.jsx:**
+- Сохранение активной вкладки при обновлении страницы
+- Адаптивный заголовок для мобильных
+- Правильное центрирование карты на точке `[52.416925, 103.738906]` (ЛБК)
+
+---
+
+## ⚠️ **ТЕКУЩИЕ ПРОБЛЕМЫ И ИХ СТАТУС**
+
+### 🔴 **КРИТИЧЕСКИЕ:**
+1. **Метки отображаются со смещением**
+   - **Причина:** Неправильный парсинг бинарного формата PostGIS (EWKB)
+   - **Данные в БД:** `"0102000020E610000002000000010000D0DCED5940F829B03C69344A40B32E6E73DEED59405C878C836C344A40"`
+   - **Формат:** EWKB (Extended Well-Known Binary), а не текстовый LineString
+
+2. **Ошибка 400 при загрузке меток**
+   - **Ошибка:** `"Could not find a relationship between 'trail_marks' and 'st_asgeojson'"`
+   - **Причина:** Supabase REST API не поддерживает SQL функции в select
+   - **Решение предложено:** Создать RPC функцию `get_geometry_as_geojson`
+
+### 🟡 **СРЕДНЕЙ ВАЖНОСТИ:**
+3. **RLS отключен для таблицы `trail_marks`**
+   - **Статус:** "Data is publicly accessible via API as RLS is disabled"
+   - **Риск:** Любой может читать/писать/удалять метки
+   - **Решение:** Включить RLS (SQL предоставлен)
+
+4. **Интерфейс рисования меток нестабилен**
+   - **Проблема:** `handleDrawingClick is not defined`
+   - **Статус:** Частично исправлено, но нужна доработка
+
+### 🟢 **ИСПРАВЛЕННЫЕ:**
+5. **Карта не отображалась на мобильных** ✅
+   - **Причина:** Конфликт CSS стилей высоты
+   - **Решение:** Убраны конфликтующие медиа-запросы
+
+6. **Флаг Украины в атрибуции** ✅
+   - **Решение:** CSS скрытие `.leaflet-attribution-flag`
+
+---
+
+## 🛠️ **ГОТОВЫЕ РЕШЕНИЯ ДЛЯ ИСПРАВЛЕНИЯ**
+
+### **1. RPC ФУНКЦИЯ ДЛЯ ПРЕОБРАЗОВАНИЯ GEOJSON**
+```sql
+CREATE OR REPLACE FUNCTION get_geometry_as_geojson(geom_id bigint)
+RETURNS json AS $$
+DECLARE
+  result json;
+BEGIN
+  SELECT ST_AsGeoJSON(geometry)::json
+  INTO result
+  FROM trail_marks
+  WHERE id = geom_id;
+  
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+### **2. ИСПРАВЛЕННЫЙ ЗАПРОС В `TrailMarksDisplay.jsx`**
+```javascript
+// Вместо:
+const { data, error } = await supabase
+  .from('trail_marks')
+  .select(`*, geometry:st_asgeojson(geometry)`)
+  .order('created_at', { ascending: false });
+
+// Использовать:
+const { data, error } = await supabase
+  .from('trail_marks')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+// Для каждой метки отдельно:
+const { data: geoData } = await supabase.rpc(
+  'get_geometry_as_geojson', 
+  { geom_id: mark.id }
+);
+```
+
+### **3. ПАРСИНГ WKB НА КЛИЕНТЕ (альтернатива)**
+```javascript
+const parseWkbGeometry = (wkbHex) => {
+  // Преобразование hex строки EWKB в координаты [lat, lng]
+  // Реализация предоставлена в беседе
+};
+```
+
+---
+
+## 📱 **ТЕКУЩИЙ ИНТЕРФЕЙС**
+
+### **ВКЛАДКИ:**
+```
+Таблица (🏆) | Карта (🗺️) | Добавить (➕) | О проекте (ℹ️) | Профиль (👤)
+```
+
+### **КАРТА СОДЕРЖИТ:**
+1. **GPX треки** заездов (цвет зависит от возраста)
+2. **Метки трассы** (постоянные/временные)
+3. **Кнопка добавления** меток (FloatButton в углу)
+4. **Легенда** с объяснением цветов и типов
+5. **Счётчик меток** "📍 Меток на карте: X"
+
+### **ПРОЦЕСС ДОБАВЛЕНИЯ МЕТКИ:**
+1. Клик на карту → контекстное меню
+2. Выбор "Точку" или "Участок трассы"
+3. Заполнение формы (тип, категория, описание)
+4. Автосохранение в БД и отображение на карте
+
+---
+
+## 🔮 **ПЛАН ДАЛЬНЕЙШЕЙ РАЗРАБОТКИ**
+
+### **ВЫСОКИЙ ПРИОРИТЕТ:**
+1. **Исправить парсинг координат** меток
+2. **Включить RLS** для таблицы `trail_marks`
+3. **Стабилизировать** интерфейс рисования меток
+
+### **СРЕДНИЙ ПРИОРИТЕТ:**
+4. **Добавить подтверждение** меток другими пользователями
+5. **Система "старения"** меток (исчезновение через 24ч)
+6. **Кластеризация** меток при большом количестве
+
+### **НИЗКИЙ ПРИОРИТЕТ:**
+7. **Тепловая карта** активности на трассе
+8. **Статистика** по меткам
+9. **Мобильная оптимизация** интерфейса добавления
+
+---
+
+## 💾 **КЛЮЧЕВЫЕ НАСТРОЙКИ PRODUCTION**
+
+### **Supabase:**
+- **Project URL:** `https://xsqelqxwthjufdwfdecf.supabase.co`
+- **Auth Redirect URLs:** `https://ski-leaderboard.vercel.app/auth/callback`
+- **Email confirmation:** включено
+- **Storage bucket:** `gpx-tracks` (публичный с политиками)
+
+### **Версии пакетов:**
+```
+leaflet: ^1.9.4
+react-leaflet: ^4.2.1 (из-за React 18)
+leaflet-gpx: ^1.7.0
+```
+
+### **Координаты центра карты:**
+```javascript
+[52.416925, 103.738906] // Центр трассы ЛБК, зум 15
+```
+
+---
+
+## 🆘 **ЧТО НУЖНО ДЛЯ ПОЛНОГО КОНТЕКСТА В НОВОЙ БЕСЕДЕ?**
+
+**Чтобы новый ассистент мог продолжить разработку, ему нужна:**
+
+1. **Эта сводка контекста** (уже есть ✅)
+2. **Актуальные версии файлов** (можно дать по запросу):
+   - `src/widgets/Map/ui/Map.jsx`
+   - `src/widgets/Map/ui/TrailMarksDisplay.jsx`
+   - `src/widgets/Map/ui/MapClickMenu.jsx`
+   - `src/App.jsx` (часть с табами)
+3. **Структура таблицы `trail_marks`** (уже есть ✅)
+4. **Пример данных** из `trail_marks` (уже есть ✅)
+
+**Готов продолжить в новой беседе!** Что будем делать дальше?

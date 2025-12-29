@@ -1,0 +1,41 @@
+.selectorContainer {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.selectorLabel {
+	font-size: 16px;
+	font-weight: 500;
+	color: #262626;
+	white-space: nowrap;
+}
+
+.selector {
+	min-width: 250px;
+}
+
+.trailDescription {
+	margin-top: 8px;
+	font-size: 13px;
+	color: #8c8c8c;
+	background: #fafafa;
+	padding: 8px 12px;
+	border-radius: 6px;
+	border-left: 3px solid #1890ff;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+	.selectorContainer {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+	
+	.selector {
+		width: 100%;
+		min-width: unset;
+	}
+}

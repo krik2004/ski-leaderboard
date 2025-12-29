@@ -1,0 +1,81 @@
+export const trails = [
+	{
+		id: 'lbk',
+		name: 'ЛБК Ангарский',
+		center: [52.41911, 103.74019],
+		zoom: 14,
+		description: 'Лыжная база Ангарск, малый круг',
+	},
+	{
+		id: 'akadem',
+		name: 'Академгородок',
+		center: [52.24577, 104.25916],
+		zoom: 15,
+		description: 'Академгородок Иркутск',
+	},
+	{
+		id: 'teplye',
+		name: 'Тёплые озера',
+		center: [52.24331, 104.29682],
+		zoom: 15,
+		description: 'Тёплые озера',
+	},
+	{
+		id: 'ersh',
+		name: 'Ершовский лес, Якоби - Крокодил',
+		center: [52.21816, 104.32713],
+		zoom: 14,
+		description: 'Ершовский лес',
+	},
+	{
+		id: 'ishih',
+		name: 'Исхи, Топка',
+		center: [52.23199, 104.40072],
+		zoom: 14,
+		description: 'Исхи, Топка',
+	},
+	{
+		id: 'dinamo',
+		name: 'Динамо',
+		center: [52.31187, 104.35624],
+		zoom: 14,
+		description: 'Динамо Иркутск',
+	},
+	{
+		id: 'nlo',
+		name: 'НЛО Объездная',
+		center: [52.34101, 104.06052],
+		zoom: 14,
+		description: 'НЛО Объездная',
+	},
+	{
+		id: 'karery',
+		name: 'Карьеры',
+		center: [52.22813, 104.09221],
+		zoom: 14,
+		description: 'Карьеры',
+	},
+	{
+		id: 'chistye',
+		name: 'Чистые Ключи - Моты',
+		center: [52.13556, 103.96366],
+		zoom: 12,
+		description: 'Чистые Ключи - Моты',
+	},
+	{
+		id: 'snezhnaya',
+		name: 'Снежная гора',
+		center: [52.32247, 105.10908],
+		zoom: 14,
+		description: 'Снежная гора',
+	},
+	{
+		id: 'bam',
+		name: 'БАМ',
+		center: [51.98182, 104.04374],
+		zoom: 12,
+		description: 'БАМ',
+	},
+]
+
+export const defaultTrail = trails[0] // ЛБК Ангарский

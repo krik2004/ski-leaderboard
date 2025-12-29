@@ -145,26 +145,26 @@ const TrailMarksLayer = ({ map }) => {
 		}
 		return labels[category] || category
 	}
-const renderMark = mark => {
-	if (!map || !mark) return null
+	const renderMark = mark => {
+		if (!map || !mark) return null
 
-	try {
-		// Парсим geometry из базы (пока заглушка)
-		const style =
-			mark.type === 'permanent'
-				? { color: '#f5222d', weight: 4, opacity: 0.8 }
-				: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
+		try {
+			// Парсим geometry из базы (пока заглушка)
+			const style =
+				mark.type === 'permanent'
+					? { color: '#f5222d', weight: 4, opacity: 0.8 }
+					: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
 
-		// Временные координаты - потом заменим на парсинг
-		const coordinates = [
-			[52.4169 + Math.random() * 0.001, 103.7388 + Math.random() * 0.001],
-			[52.417 + Math.random() * 0.001, 103.739 + Math.random() * 0.001],
-			[52.4168 + Math.random() * 0.001, 103.7386 + Math.random() * 0.001],
-		]
+			// Временные координаты - потом заменим на парсинг
+			const coordinates = [
+				[52.4169 + Math.random() * 0.001, 103.7388 + Math.random() * 0.001],
+				[52.417 + Math.random() * 0.001, 103.739 + Math.random() * 0.001],
+				[52.4168 + Math.random() * 0.001, 103.7386 + Math.random() * 0.001],
+			]
 
-		const line = L.polyline(coordinates, style).addTo(map)
+			const line = L.polyline(coordinates, style).addTo(map)
 
-		const popupContent = `
+			const popupContent = `
       <div style="min-width: 200px">
         <strong>${mark.category}</strong><br>
         <div>Тип: ${
@@ -180,13 +180,13 @@ const renderMark = mark => {
       </div>
     `
 
-		line.bindPopup(popupContent)
-		return line
-	} catch (err) {
-		console.error('Ошибка отрисовки метки:', err, mark)
-		return null
+			line.bindPopup(popupContent)
+			return line
+		} catch (err) {
+			console.error('Ошибка отрисовки метки:', err, mark)
+			return null
+		}
 	}
-}
 	if (loading) {
 		return (
 			<div

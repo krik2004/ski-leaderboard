@@ -1,30 +1,25 @@
-import React, { useEffect, useRef } from 'react'
-import { Card, Alert } from 'antd'
+import React, { useEffect, useRef, useState } from 'react'
+import { Card } from 'antd'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import MapClickMenu from './MapClickMenu'
+import TrailMarksDisplay from './TrailMarksDisplay'
+import TrailSelector from './TrailSelector'
+import { trails, defaultTrail } from './trailsData'
 import styles from './Map.module.css'
 
 const Map = ({ user }) => {
 	const mapContainerRef = useRef(null)
 	const mapInstanceRef = useRef(null)
+	const [selectedTrail, setSelectedTrail] = useState(defaultTrail)
 
+	// Инициализация карты
 	useEffect(() => {
-		// Ждем пока контейнер будет доступен
 		const initMap = () => {
 			if (!mapInstanceRef.current && mapContainerRef.current) {
-				// Проверяем высоту контейнера
-				const containerHeight = mapContainerRef.current.offsetHeight
-				console.log('Высота контейнера карты:', containerHeight)
-
-				if (containerHeight < 100) {
-					// Если высота маленькая - увеличиваем
-					mapContainerRef.current.style.height = '400px'
-					mapContainerRef.current.style.minHeight = '400px'
-				}
-
 				const mapInstance = L.map(mapContainerRef.current).setView(
-					[52.416925, 103.738906],
-					15
+					selectedTrail.center,
+					selectedTrail.zoom
 				)
 
 				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -33,14 +28,10 @@ const Map = ({ user }) => {
 				}).addTo(mapInstance)
 
 				mapInstanceRef.current = mapInstance
-				console.log('Карта инициализирована')
 			}
 		}
 
-		// Пробуем несколько раз с задержками
 		setTimeout(initMap, 100)
-		setTimeout(initMap, 500)
-		setTimeout(initMap, 1000)
 
 		return () => {
 			if (mapInstanceRef.current) {
@@ -48,68 +39,52 @@ const Map = ({ user }) => {
 				mapInstanceRef.current = null
 			}
 		}
-	}, [])
-useEffect(() => {
-	// Функция обновления размеров карты
-	const updateMapSize = () => {
-		if (mapInstanceRef.current) {
-			// Небольшая задержка для гарантии что DOM обновился
-			setTimeout(() => {
-				mapInstanceRef.current.invalidateSize()
-				console.log('Карта обновлена, ширина окна:', window.innerWidth)
-			}, 100)
+	}, []) // Инициализируем карту только один раз
+
+	// Обновление центра карты при выборе трассы
+	useEffect(() => {
+		if (mapInstanceRef.current && selectedTrail) {
+			mapInstanceRef.current.setView(selectedTrail.center, selectedTrail.zoom)
 		}
+	}, [selectedTrail])
+
+	const handleTrailChange = trail => {
+		setSelectedTrail(trail)
 	}
 
-	// Обновляем при ресайзе
-	window.addEventListener('resize', updateMapSize)
-
-	// Первоначальное обновление
-	const initTimer = setTimeout(updateMapSize, 500)
-
-	return () => {
-		window.removeEventListener('resize', updateMapSize)
-		clearTimeout(initTimer)
-	}
-}, [])
 	return (
-		<Card className={styles.card} title='Карта трасс'>
-			<Alert
-				message='Карта'
-				description='Интерактивная карта трасс с метками'
-				type='info'
-				showIcon
-				style={{ marginBottom: 16 }}
-			/>
+		<Card className={styles.card}>
+			<div className={styles.cardHeader}>
+				<TrailSelector
+					selectedTrail={selectedTrail}
+					onTrailChange={handleTrailChange}
+				/>
+			</div>
 
-			<div
-				ref={mapContainerRef}
-				className={styles.mapContainer}
-	
-			>
-				{/* Fallback текст */}
-				<div
-					style={{
-						position: 'absolute',
-						top: '50%',
-						left: '50%',
-						transform: 'translate(-50%, -50%)',
-						color: '#999',
-						textAlign: 'center',
-					}}
-				>
-					Загрузка карты...
-				</div>
+			<div ref={mapContainerRef} className={styles.mapContainer}>
+				{mapInstanceRef.current && user && (
+					<MapClickMenu map={mapInstanceRef.current} user={user} />
+				)}
+				{mapInstanceRef.current && (
+					<TrailMarksDisplay map={mapInstanceRef.current} user={user} />
+				)}
 			</div>
 
 			<div className={styles.legend}>
-				<h4>Легенда:</h4>
+				<h4>Легенда меток:</h4>
 				<ul>
-					<li>🔴 Постоянные метки (опасные участки)</li>
-					<li>🟡 Временные метки (срок жизни 24ч)</li>
-					<li>🟢 Свежие треки</li>
-					<li>🔵 Старые треки</li>
+					<li>⚠️ Опасный поворот</li>
+					<li>⛰️ Крутой склон</li>
+					<li>🌿 Ветки на трассе</li>
+					<li>🏖️ Песок/грунт</li>
+					<li>🚜 Следы лесовозов</li>
+					<li>❄️ Незатроплено</li>
+					<li>⭐ Идеально</li>
+					<li>📍 Другое</li>
 				</ul>
+				<div className={styles.legendSubtext}>
+					🔒 Постоянная метка | ⏰ Временная (24ч)
+				</div>
 			</div>
 		</Card>
 	)

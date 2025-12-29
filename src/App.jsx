@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Layout, Tabs, Button, Card, Spin, message } from 'antd'
 import {
-  TrophyOutlined,
-  PlusOutlined,
-  InfoCircleOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  LoadingOutlined,
+	TrophyOutlined,
+	PlusOutlined,
+	InfoCircleOutlined,
+	UserOutlined,
+	LogoutOutlined,
+	LoadingOutlined,
 } from '@ant-design/icons'
 import { supabase } from './shared/api/supabase'
 
@@ -35,7 +35,10 @@ function App() {
 	const [user, setUser] = useState(null)
 	const [times, setTimes] = useState([])
 	const [loading, setLoading] = useState(true)
-	const [activeTab, setActiveTab] = useState('leaderboard')
+const [activeTab, setActiveTab] = useState(() => {
+  const saved = localStorage.getItem('ski-track-active-tab');
+  return saved || 'leaderboard';
+});
 	const [isMobile, setIsMobile] = useState(false)
 
 	// Определяем мобильное устройство
@@ -50,20 +53,29 @@ function App() {
 		return () => window.removeEventListener('resize', checkMobile)
 	}, [])
 
-	useEffect(() => {
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			setUser(session?.user || null)
-			setLoading(false)
-		})
+useEffect(() => {
+	supabase.auth.getSession().then(({ data: { session } }) => {
+		setUser(session?.user || null)
+		setLoading(false)
 
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, session) => {
-			setUser(session?.user || null)
-		})
+		// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
+		const savedTab = localStorage.getItem('ski-track-active-tab')
+		if (
+			savedTab &&
+			['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
+		) {
+			setActiveTab(savedTab)
+		}
+	})
 
-		return () => subscription.unsubscribe()
-	}, [])
+	const {
+		data: { subscription },
+	} = supabase.auth.onAuthStateChange((_event, session) => {
+		setUser(session?.user || null)
+	})
+
+	return () => subscription.unsubscribe()
+}, [])
 
 	useEffect(() => {
 		if (user) {
@@ -158,7 +170,8 @@ function App() {
 	}
 
 	const handleTabChange = key => {
-		setActiveTab(key)
+		setActiveTab(key);
+		localStorage.setItem('ski-track-active-tab', key);
 	}
 
 	return (
@@ -271,7 +284,7 @@ function App() {
 									key: 'map', // НОВЫЙ КЛЮЧ
 									label: (
 										<span>
-											<EnvironmentOutlined /> Карта ЛБК
+											<EnvironmentOutlined /> Карта
 										</span>
 									),
 								},
