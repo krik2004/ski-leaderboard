@@ -7,6 +7,7 @@ import {
 	UserOutlined,
 	LogoutOutlined,
 	LoadingOutlined,
+	FileOutlined,
 } from '@ant-design/icons'
 import { supabase } from './shared/api/supabase'
 
@@ -16,7 +17,10 @@ import { Profile } from './features/profile'
 import { AddTimeForm } from './features/lap-times'
 import Leaderboard from './widgets/Leaderboard/ui/Leaderboard'
 import { About } from './widgets/about'
+import { GpxToolsPage } from './features/gpx-tools'
 import Map from './widgets/Map'
+
+
 import { EnvironmentOutlined } from '@ant-design/icons'
 
 import './styles/base.css'
@@ -142,7 +146,7 @@ function App() {
 			</div>
 		)
 	}
-// Если пользователь не авторизован
+	// Если пользователь не авторизован
 	// if (!user) {
 	// 	return (
 	// 		<div
@@ -298,8 +302,32 @@ function App() {
 											<TrophyOutlined /> Таблица
 										</span>
 									),
+									children: (
+										<Leaderboard
+											times={times}
+											user={user}
+											onTimeUpdated={fetchTimes}
+										/>
+									),
 								},
-
+								{
+									key: 'tracks', // ← НОВАЯ ВКЛАДКА
+									label: (
+										<span>
+											<FileOutlined /> Треки
+										</span>
+									),
+									children: <GpxToolsPage user={user} />,
+								},
+								{
+									key: 'map',
+									label: (
+										<span>
+											<EnvironmentOutlined /> Карта
+										</span>
+									),
+									children: <Map user={user} />,
+								},
 								{
 									key: 'add',
 									label: (
@@ -307,13 +335,8 @@ function App() {
 											<PlusOutlined /> Добавить
 										</span>
 									),
-								},
-								{
-									key: 'map', // НОВЫЙ КЛЮЧ
-									label: (
-										<span>
-											<EnvironmentOutlined /> Карта
-										</span>
+									children: (
+										<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 									),
 								},
 								{
@@ -323,9 +346,11 @@ function App() {
 											<InfoCircleOutlined /> О проекте
 										</span>
 									),
+									children: <About />,
 								},
 							]}
 						/>
+
 						<div style={{ marginTop: '20px' }}>
 							{activeTab === 'leaderboard' && (
 								<Leaderboard
@@ -362,36 +387,29 @@ function App() {
 										</span>
 									),
 								},
+
 								{
-									key: 'map', // НОВЫЙ КЛЮЧ
+									key: 'tracks',
+									label: (
+										<span>
+											<FileOutlined /> Треки
+										</span>
+									),
+								},
+								{
+									key: 'map',
 									label: (
 										<span>
 											<EnvironmentOutlined /> Карта
 										</span>
 									),
 								},
-								{
-									key: 'add',
-									label: (
-										<span>
-											<PlusOutlined /> Добавить
-										</span>
-									),
-								},
-								{
-									key: 'about',
-									label: (
-										<span>
-											<InfoCircleOutlined /> О проекте
-										</span>
-									),
-								},
+								// ... остальные табы
 							]}
 							style={{
 								marginBottom: '10px',
 							}}
 						/>
-
 						<div>
 							{activeTab === 'leaderboard' && (
 								<Leaderboard
@@ -400,6 +418,10 @@ function App() {
 									onTimeUpdated={fetchTimes}
 								/>
 							)}
+							{activeTab === 'tracks' && (
+								<GpxToolsPage user={user} />
+							)}
+							{activeTab === 'map' && <Map user={user} />}
 							{activeTab === 'add' && (
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 							)}

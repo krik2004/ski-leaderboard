@@ -1,0 +1,84 @@
+.container {
+  width: 100%;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  color: #722ed1;
+  margin-bottom: 4px !important;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #666;
+}
+
+.alert {
+  margin-bottom: 20px;
+}
+
+.comparisonSetup {
+  margin-bottom: 24px;
+}
+
+.trackSelection {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .trackSelection {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.trackCard {
+  flex: 1;
+  min-width: 250px;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vsLabel {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1890ff;
+  padding: 8px 16px;
+  background: #e6f7ff;
+  border-radius: 50%;
+}
+
+.select {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.statsPreview {
+  padding: 16px;
+  background: #f9f0ff;
+  border: 1px solid #d3adf7;
+  border-radius: 6px;
+}
+
+.featuresList {
+  margin: 12px 0 0 20px;
+  padding: 0;
+  color: #666;
+}
+
+.featuresList li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}

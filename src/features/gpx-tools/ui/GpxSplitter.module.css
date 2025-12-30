@@ -1,0 +1,93 @@
+.container {
+  width: 100%;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  color: #fa8c16;
+  margin-bottom: 4px !important;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #666;
+}
+
+.alert {
+  margin-bottom: 20px;
+}
+
+.workflow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #fff7e6;
+  border-radius: 8px;
+  border: 1px solid #ffd591;
+}
+
+@media (max-width: 992px) {
+  .workflow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .arrow {
+    transform: rotate(90deg);
+    margin-left: 40px;
+  }
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.stepNumber {
+  width: 32px;
+  height: 32px;
+  background: #1890ff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.stepContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arrow {
+  font-size: 24px;
+  color: #1890ff;
+  font-weight: bold;
+}
+
+.actions {
+  text-align: center;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+}

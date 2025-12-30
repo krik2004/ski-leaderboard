@@ -838,8 +838,13 @@ export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
 		<Card
 			title={
 				<Space>
-					<PlusOutlined />
-					<span>Добавить новый заезд</span>
+					{user ? (
+						<span>Добавить новый заезд</span>
+					) : (
+						<span style={{ color: '#faad14' }}>
+							⚠️ Для добавления заезда необходимо войти в систему
+						</span>
+					)}
 				</Space>
 			}
 			bordered={false}
@@ -986,19 +991,21 @@ export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
 							<Button
 								type='primary'
 								htmlType='submit'
-								icon={<PlusOutlined />}
 								loading={loading}
-								disabled={uploading}
+								disabled={uploading || !user} // Добавляем !user
 								size='large'
 								block={isMobile}
 								style={{
-									backgroundColor: '#52c41a',
-									borderColor: '#52c41a',
+									backgroundColor: !user ? '#d9d9d9' : '#52c41a',
+									borderColor: !user ? '#d9d9d9' : '#52c41a',
 									height: '48px',
 									fontSize: '16px',
+									cursor: !user ? 'not-allowed' : 'pointer',
 								}}
 							>
-								{uploading
+								{!user
+									? '🔒 Требуется вход'
+									: uploading
 									? 'Загрузка трека...'
 									: loading
 									? 'Добавление...'
@@ -2969,10 +2976,10 @@ function App() {
 	const [user, setUser] = useState(null)
 	const [times, setTimes] = useState([])
 	const [loading, setLoading] = useState(true)
-const [activeTab, setActiveTab] = useState(() => {
-  const saved = localStorage.getItem('ski-track-active-tab');
-  return saved || 'leaderboard';
-});
+	const [activeTab, setActiveTab] = useState(() => {
+		const saved = localStorage.getItem('ski-track-active-tab')
+		return saved || 'leaderboard'
+	})
 	const [isMobile, setIsMobile] = useState(false)
 
 	// Определяем мобильное устройство
@@ -2987,35 +2994,34 @@ const [activeTab, setActiveTab] = useState(() => {
 		return () => window.removeEventListener('resize', checkMobile)
 	}, [])
 
-useEffect(() => {
-	supabase.auth.getSession().then(({ data: { session } }) => {
-		setUser(session?.user || null)
-		setLoading(false)
+	useEffect(() => {
+		supabase.auth.getSession().then(({ data: { session } }) => {
+			setUser(session?.user || null)
+			setLoading(false)
 
-		// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
-		const savedTab = localStorage.getItem('ski-track-active-tab')
-		if (
-			savedTab &&
-			['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
-		) {
-			setActiveTab(savedTab)
-		}
-	})
+			// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
+			const savedTab = localStorage.getItem('ski-track-active-tab')
+			if (
+				savedTab &&
+				['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
+			) {
+				setActiveTab(savedTab)
+			}
+		})
 
-	const {
-		data: { subscription },
-	} = supabase.auth.onAuthStateChange((_event, session) => {
-		setUser(session?.user || null)
-	})
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setUser(session?.user || null)
+		})
 
-	return () => subscription.unsubscribe()
-}, [])
+		return () => subscription.unsubscribe()
+	}, [])
 
 	useEffect(() => {
-		if (user) {
-			fetchTimes()
-		}
-	}, [user])
+		// Загружаем заезды ВСЕГДА, даже для гостей
+		fetchTimes()
+	}, [user]) // Добавляем user в зависимости
 
 	async function fetchTimes() {
 		try {
@@ -3077,35 +3083,35 @@ useEffect(() => {
 			</div>
 		)
 	}
-
-	if (!user) {
-		return (
-			<div
-				style={{
-					minHeight: '100vh',
-					padding: isMobile ? '10px' : '20px',
-					background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-				}}
-			>
-				<div
-					style={{
-						width: '100%',
-						maxWidth: '500px',
-						padding: isMobile ? '15px' : '30px',
-					}}
-				>
-					<Auth onLoginSuccess={setUser} />
-				</div>
-			</div>
-		)
-	}
+// Если пользователь не авторизован
+	// if (!user) {
+	// 	return (
+	// 		<div
+	// 			style={{
+	// 				minHeight: '100vh',
+	// 				padding: isMobile ? '10px' : '20px',
+	// 				background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+	// 				display: 'flex',
+	// 				alignItems: 'center',
+	// 				justifyContent: 'center',
+	// 			}}
+	// 		>
+	// 			<div
+	// 				style={{
+	// 					width: '100%',
+	// 					maxWidth: '500px',
+	// 					padding: isMobile ? '15px' : '30px',
+	// 				}}
+	// 			>
+	// 				<Auth onLoginSuccess={setUser} />
+	// 			</div>
+	// 		</div>
+	// 	)
+	// }
 
 	const handleTabChange = key => {
-		setActiveTab(key);
-		localStorage.setItem('ski-track-active-tab', key);
+		setActiveTab(key)
+		localStorage.setItem('ski-track-active-tab', key)
 	}
 
 	return (
@@ -3154,28 +3160,57 @@ useEffect(() => {
 						gap: isMobile ? '6px' : '10px',
 					}}
 				>
-					<Button
-						type='text'
-						icon={<UserOutlined />}
-						onClick={() => setActiveTab('profile')}
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							padding: isMobile ? '4px 8px' : '8px 12px',
-							fontSize: isMobile ? '12px' : '14px',
-						}}
-					>
-						{!isMobile && user.email}
-					</Button>
-					<Button
-						type='text'
-						icon={<LogoutOutlined />}
-						onClick={handleLogout}
-						danger
-						size={isMobile ? 'small' : 'middle'}
-					>
-						{!isMobile && 'Выйти'}
-					</Button>
+					{user ? (
+						// Для авторизованных пользователей
+						<>
+							<Button
+								type='text'
+								icon={<UserOutlined />}
+								onClick={() => setActiveTab('profile')}
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									padding: isMobile ? '4px 8px' : '8px 12px',
+									fontSize: isMobile ? '12px' : '14px',
+								}}
+							>
+								{!isMobile && user.email}
+							</Button>
+							<Button
+								type='text'
+								icon={<LogoutOutlined />}
+								onClick={handleLogout}
+								danger
+								size={isMobile ? 'small' : 'middle'}
+							>
+								{!isMobile && 'Выйти'}
+							</Button>
+						</>
+					) : (
+						// Для гостей
+						<>
+							<Button
+								type='text'
+								icon={<UserOutlined />}
+								onClick={() => setActiveTab('profile')}
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									padding: isMobile ? '4px 8px' : '8px 12px',
+									fontSize: isMobile ? '12px' : '14px',
+								}}
+							>
+								{!isMobile && 'Гость'}
+							</Button>
+							<Button
+								type='primary'
+								onClick={() => setActiveTab('profile')}
+								size={isMobile ? 'small' : 'middle'}
+							>
+								Войти
+							</Button>
+						</>
+					)}
 				</div>
 			</AntHeader>
 
@@ -3218,7 +3253,7 @@ useEffect(() => {
 									key: 'map', // НОВЫЙ КЛЮЧ
 									label: (
 										<span>
-											<EnvironmentOutlined /> Карта ЛБК
+											<EnvironmentOutlined /> Карта
 										</span>
 									),
 								},
@@ -3244,8 +3279,11 @@ useEffect(() => {
 							{activeTab === 'add' && (
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 							)}
-							{activeTab === 'profile' && (
+							{activeTab === 'profile' && user && (
 								<Profile user={user} onUpdate={fetchTimes} />
+							)}
+							{activeTab === 'profile' && !user && (
+								<Auth onLoginSuccess={setUser} />
 							)}
 							{activeTab === 'about' && <About />}
 						</div>
@@ -4284,181 +4322,567 @@ export default GpxLayer
 
 ## 📄 src/widgets/Map/ui/TrailMarksDisplay.jsx
 ```
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import L from 'leaflet'
 import { supabase } from '../../../shared/api/supabase'
-import { Alert } from 'antd'
+import { Alert, Spin, Button, message } from 'antd'
+import {
+	LoadingOutlined,
+	LikeOutlined,
+	DislikeOutlined,
+} from '@ant-design/icons'
 
-const TrailMarksDisplay = ({ map }) => {
+const TrailMarksDisplay = ({ map, user }) => {
 	const [marks, setMarks] = useState([])
 	const [error, setError] = useState(null)
+	const [loading, setLoading] = useState(true)
+	const [userVotes, setUserVotes] = useState({}) // { markId: 'up'|'down' }
+	const [updatingVote, setUpdatingVote] = useState(null)
 
-	// Стили для разных категорий
-	const categoryStyles = {
-		dangerous_turn: { color: '#f5222d', icon: '⚠️' },
-		steep_slope: { color: '#fa8c16', icon: '⛰️' },
-		branches: { color: '#faad14', icon: '🌿' },
-		sand: { color: '#d48806', icon: '🏖️' },
-		loggers: { color: '#722ed1', icon: '🚜' },
-		untrodden: { color: '#13c2c2', icon: '❄️' },
-		perfect: { color: '#52c41a', icon: '⭐' },
-		other: { color: '#1890ff', icon: '📍' },
+	// Иконки для разных категорий
+	// Иконки для разных категорий - уменьшенный размер
+	const categoryIcons = {
+		dangerous_turn: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">⚠️</div>', // Встраиваем размер
+			className: 'custom-div-icon',
+			iconSize: [18, 18], // Размер контейнера
+			iconAnchor: [9, 18], // Точка привязки к координатам
+			popupAnchor: [0, -18], // Смещение popup
+		}),
+		steep_slope: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">⛰️</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
+		branches: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">🌿</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
+		sand: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">🏖️</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
+		loggers: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">🚜</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
+		untrodden: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">❄️</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
+		perfect: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">⭐</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
+		other: L.divIcon({
+			html: '<div style="font-size: 18px; line-height: 1;">📍</div>',
+			className: 'custom-div-icon',
+			iconSize: [18, 18],
+			iconAnchor: [9, 18],
+			popupAnchor: [0, -18],
+		}),
 	}
 
-	useEffect(() => {
+	// Цвета для разных типов
+	const categoryColors = {
+		dangerous_turn: '#f5222d',
+		steep_slope: '#fa8c16',
+		branches: '#faad14',
+		sand: '#d48806',
+		loggers: '#722ed1',
+		untrodden: '#13c2c2',
+		perfect: '#52c41a',
+		other: '#1890ff',
+	}
+
+	// Загрузка меток
+	const loadMarks = useCallback(async () => {
+		try {
+			console.log('🔄 Загрузка меток...')
+			setLoading(true)
+
+			// Загружаем метки через RPC
+			const { data: marksData, error: marksError } = await supabase.rpc(
+				'get_marks_with_geojson'
+			)
+
+			if (marksError) throw marksError
+
+			if (!marksData || marksData.length === 0) {
+				setMarks([])
+				setLoading(false)
+				return
+			}
+
+			// Загружаем голоса текущего пользователя
+			if (user) {
+				const { data: votesData } = await supabase
+					.from('mark_confirmations')
+					.select('mark_id, vote_type')
+					.eq('user_id', user.id)
+
+				const votesMap = {}
+				votesData?.forEach(vote => {
+					votesMap[vote.mark_id] = vote.vote_type
+				})
+				setUserVotes(votesMap)
+			}
+
+			// Отображаем метки
+			displayMarksOnMap(marksData)
+		} catch (err) {
+			console.error('❌ Ошибка загрузки:', err)
+			setError('Не удалось загрузить метки')
+		} finally {
+			setLoading(false)
+		}
+	}, [map, user])
+
+	// Отображение меток на карте
+	const displayMarksOnMap = marksData => {
 		if (!map) return
 
+		// Очищаем старые метки
+		marks.forEach(marker => {
+			if (marker && map.hasLayer(marker)) {
+				map.removeLayer(marker)
+			}
+		})
 
+		const newMarkers = []
 
-		const loadAndDisplayMarks = async () => {
+		marksData.forEach(mark => {
 			try {
-				console.log('Загрузка меток для отображения...')
+				// Получаем координаты центра линии
+				let centerLat = 52.416925 // координаты по умолчанию
+				let centerLng = 103.738906
 
-				// 1. Загружаем метки из базы ВМЕСТЕ с координатами в GeoJSON
-				const { data, error } = await supabase
-					.from('trail_marks')
-					.select(
-						`
-        *,
-        geometry:st_asgeojson(geometry)  // КОНВЕРТИРУЕМ В GEOJSON!
-      `
-					)
-					.order('created_at', { ascending: false })
+				if (mark.geometry && mark.geometry.coordinates) {
+					const coords = mark.geometry.coordinates
+					if (mark.geometry.type === 'LineString' && coords.length > 0) {
+						// Берем среднюю точку линии
+						const midIndex = Math.floor(coords.length / 2)
+						const [lng, lat] = coords[midIndex]
+						centerLat = lat
+						centerLng = lng
+					} else if (mark.geometry.type === 'Point') {
+						const [lng, lat] = coords
+						centerLat = lat
+						centerLng = lng
+					}
+				}
 
-				if (error) throw error
+				// Создаем маркер с иконкой
+				const icon = categoryIcons[mark.category] || categoryIcons.other
+				const marker = L.marker([centerLat, centerLng], {
+					icon,
+					title: getCategoryLabel(mark.category),
+				}).addTo(map)
 
-				console.log('Загружено меток из базы:', data?.length || 0)
-				console.log('Пример geometry:', data?.[0]?.geometry)
+				// Создаем popup с кнопками голосования
+				const popupContent = createPopupContent(mark)
+				marker.bindPopup(popupContent)
 
-				const layers = []
+				newMarkers.push(marker)
+			} catch (err) {
+				console.error('Ошибка создания маркера:', err)
+			}
+		})
 
-				// 2. Отображаем каждую метку
-				data?.forEach(mark => {
-					try {
-						const style = categoryStyles[mark.category] || categoryStyles.other
-						const isTemporary = mark.type === 'temporary'
+		setMarks(newMarkers)
+		console.log(`✅ Отображено меток: ${newMarkers.length}`)
+	}
 
-						// Проверяем не истек ли срок
-						const isExpired =
-							mark.expiry_time && new Date(mark.expiry_time) < new Date()
-						if (isExpired) return
+	// Создание содержимого popup
+	// Создание содержимого popup
+	const createPopupContent = mark => {
+		const userVote = userVotes[mark.id]
+		const isOwnMark = user && mark.user_id === user.id
+		const color = categoryColors[mark.category] || '#1890ff'
 
-						// Парсим GeoJSON из базы
-						let coordinates = []
-
-						if (mark.geometry && typeof mark.geometry === 'string') {
-							try {
-								// Парсим GeoJSON строку
-								const geoJson = JSON.parse(mark.geometry)
-
-								if (geoJson.type === 'LineString' && geoJson.coordinates) {
-									// GeoJSON хранит [lng, lat], Leaflet нужны [lat, lng]
-									coordinates = geoJson.coordinates.map(coord => [
-										coord[1],
-										coord[0],
-									])
-									console.log(`Метка ${mark.id}:`, coordinates.length, 'точек')
-								}
-							} catch (parseError) {
-								console.error(
-									'Ошибка парсинга GeoJSON для метки',
-									mark.id,
-									':',
-									parseError,
-									mark.geometry
-								)
-							}
-						}
-
-						if (coordinates.length < 2) {
-							console.log(
-								'Недостаточно координат для метки:',
-								mark.id,
-								'Использую тестовые'
-							)
-							// Тестовые координаты ВБЛИЗИ центра трассы
-							const offset = Math.random() * 0.01 // Случайное смещение
-							coordinates = [
-								[52.4169 + offset, 103.7388 + offset],
-								[52.417 + offset, 103.739 + offset],
-							]
-						}
-
-						// Создаем линию на карте
-						const line = L.polyline(coordinates, {
-							color: style.color,
-							weight: isTemporary ? 3 : 4,
-							opacity: isTemporary ? 0.6 : 0.8,
-							dashArray: isTemporary ? '5, 10' : null, // ПУНКТИР ТОЛЬКО ДЛЯ ВРЕМЕННЫХ
-						}).addTo(map)
-
-						// Popup с информацией
-						const popupContent = `
-          <div style="min-width: 200px; padding: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-              <span style="font-size: 24px">${style.icon}</span>
-              <div>
-                <strong style="font-size: 16px">${getCategoryLabel(
-									mark.category
-								)}</strong>
-                <div style="font-size: 12px; color: #666;">
-                  ${mark.type === 'permanent' ? 'Постоянная' : 'Временная'}
-                  ${
-										mark.expiry_time
-											? ` • до ${new Date(mark.expiry_time).toLocaleTimeString(
-													'ru-RU',
-													{ hour: '2-digit', minute: '2-digit' }
-											  )}`
-											: ''
-									}
-                </div>
-              </div>
-            </div>
-            ${
-							mark.description
-								? `<p style="margin: 10px 0; font-size: 14px;">${mark.description}</p>`
-								: ''
-						}
-            <div style="font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 8px;">
-              <div>👤 ${mark.created_by_username || 'Аноним'}</div>
-              <div>🕐 ${new Date(mark.created_at).toLocaleString('ru-RU')}</div>
-              ${
-								mark.confirmed_count
-									? `<div>✅ Подтверждений: ${mark.confirmed_count}</div>`
+		return `
+		<div style="min-width: 280px; padding: 0;">
+			<div style="
+				background: ${color}20;
+				padding: 15px;
+				border-radius: 8px 8px 0 0;
+				border-bottom: 2px solid ${color};
+				position: relative;
+			">
+				${
+					isOwnMark
+						? `
+					<button 
+						id="delete-mark-${mark.id}"
+						style="
+							position: absolute;
+							top: 10px;
+							right: 10px;
+							background: #ff4d4f;
+							color: white;
+							border: none;
+							border-radius: 4px;
+							width: 24px;
+							height: 24px;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							cursor: pointer;
+							font-size: 12px;
+							padding: 0;
+						"
+						title="Удалить метку"
+					>
+						🗑️
+					</button>
+				`
+						: ''
+				}
+				
+				<div style="display: flex; align-items: center; gap: 12px;">
+					<span style="font-size: 32px">${getCategoryIcon(mark.category)}</span>
+					<div>
+						<strong style="font-size: 16px; display: block; color: ${color};">
+							${getCategoryLabel(mark.category)}
+						</strong>
+						<span style="font-size: 12px; color: #666;">
+							${mark.type === 'permanent' ? '🔒 Постоянная' : '⏰ Временная'}
+							${
+								mark.expiry_time
+									? ` • до ${new Date(mark.expiry_time).toLocaleTimeString(
+											'ru-RU',
+											{
+												hour: '2-digit',
+												minute: '2-digit',
+											}
+									  )}`
 									: ''
 							}
-            </div>
-          </div>
-        `
-
-						line.bindPopup(popupContent)
-						layers.push(line)
-					} catch (markError) {
-						console.error('Ошибка отображения метки', mark.id, ':', markError)
+						</span>
+					</div>
+				</div>
+			</div>
+			
+			<div style="padding: 15px;">
+				${
+					mark.description
+						? `<p style="margin: 0 0 12px 0; font-size: 14px; color: #333;">${mark.description}</p>`
+						: '<p style="margin: 0 0 12px 0; font-size: 14px; color: #999; font-style: italic;">Нет описания</p>'
+				}
+				
+				<div style="
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+					margin-bottom: 12px;
+					padding: 10px;
+					background: #fafafa;
+					border-radius: 6px;
+				">
+					<button 
+						id="vote-up-${mark.id}"
+						style="
+							flex: 1;
+							padding: 8px;
+							background: ${userVote === 'up' ? '#52c41a' : '#f0f0f0'};
+							color: ${userVote === 'up' ? 'white' : '#666'};
+							border: none;
+							border-radius: 6px 0 0 6px;
+							cursor: pointer;
+							font-weight: bold;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							gap: 6px;
+						"
+						${
+							updatingVote === mark.id
+								? 'disabled style="opacity: 0.5; cursor: not-allowed;"'
+								: ''
+						}
+					>
+						<span style="font-size: 16px">👍</span>
+						<span>${mark.up_votes || 0}</span>
+					</button>
+					
+					<button 
+						id="vote-down-${mark.id}"
+						style="
+							flex: 1;
+							padding: 8px;
+							background: ${userVote === 'down' ? '#f5222d' : '#f0f0f0'};
+							color: ${userVote === 'down' ? 'white' : '#666'};
+							border: none;
+							border-radius: 0 6px 6px 0;
+							cursor: pointer;
+							font-weight: bold;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							gap: 6px;
+						"
+						${
+							updatingVote === mark.id
+								? 'disabled style="opacity: 0.5; cursor: not-allowed;"'
+								: ''
+						}
+					>
+						<span style="font-size: 16px">👎</span>
+						<span>${mark.down_votes || 0}</span>
+					</button>
+				</div>
+				
+				${
+					isOwnMark
+						? `
+					<button 
+						id="delete-confirm-${mark.id}"
+						style="
+							width: 100%;
+							padding: 10px;
+							background: #fff2f0;
+							color: #f5222d;
+							border: 1px solid #ffccc7;
+							border-radius: 6px;
+							cursor: pointer;
+							font-weight: bold;
+							margin-bottom: 12px;
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							gap: 8px;
+							font-size: 14px;
+						"
+						title="Удалить эту метку навсегда"
+					>
+						🗑️ Удалить метку
+					</button>
+				`
+						: ''
+				}
+				
+				<div style="font-size: 12px; color: #888; border-top: 1px solid #f0f0f0; padding-top: 10px;">
+					<div style="margin-bottom: 4px;">👤 <strong>${
+						mark.created_by_username || 'Аноним'
+					}</strong></div>
+					<div style="margin-bottom: 4px;">🕐 ${new Date(mark.created_at).toLocaleString(
+						'ru-RU'
+					)}</div>
+					<div style="color: #52c41a;">✅ Подтверждений: ${
+						mark.confirmed_count || 0
+					}</div>
+					${
+						isOwnMark
+							? '<div style="color: #1890ff; margin-top: 4px;">✨ Это ваша метка</div>'
+							: ''
 					}
-				})
+				</div>
+			</div>
+		</div>
+	`
+	}
+	// Функция удаления метки
+	const handleDeleteMark = async markId => {
+		if (!user) {
+			message.warning('Нужно войти в систему')
+			return
+		}
 
-				setMarks(layers)
-				console.log('Отображено меток на карте:', layers.length)
-			} catch (err) {
-				console.error('Ошибка загрузки меток:', err)
-				setError('Не удалось загрузить метки: ' + err.message)
+		// Подтверждение удаления
+		if (!window.confirm('Удалить эту метку? Это действие нельзя отменить.')) {
+			return
+		}
+
+		try {
+			// 1. Удаляем голоса за эту метку
+			await supabase.from('mark_confirmations').delete().eq('mark_id', markId)
+
+			// 2. Удаляем саму метку
+			const { error } = await supabase
+				.from('trail_marks')
+				.delete()
+				.eq('id', markId)
+
+			if (error) throw error
+
+			message.success('Метка удалена!')
+
+			// 3. Удаляем маркер с карты
+			const markerToRemove = marks.find(marker => {
+				const content = marker.getPopup()?.getContent()
+				return content && content.includes(`id="vote-up-${markId}"`)
+			})
+
+			if (markerToRemove && map) {
+				map.removeLayer(markerToRemove)
+			}
+
+			// 4. Обновляем список меток
+			setMarks(prev => prev.filter(marker => marker !== markerToRemove))
+
+			// 5. Перезагружаем метки с сервера
+			setTimeout(() => {
+				loadMarks()
+			}, 500)
+		} catch (err) {
+			console.error('Ошибка удаления метки:', err)
+			message.error('Ошибка при удалении метки')
+		}
+	}
+	// Обработка голосования
+	const handleVote = async (markId, voteType) => {
+		if (!user) {
+			message.warning('Нужно войти в систему для голосования')
+			return
+		}
+
+		setUpdatingVote(markId)
+
+		try {
+			// Удаляем старый голос, если есть
+			await supabase
+				.from('mark_confirmations')
+				.delete()
+				.eq('mark_id', markId)
+				.eq('user_id', user.id)
+
+			// Добавляем новый голос
+			const { error } = await supabase.from('mark_confirmations').insert({
+				mark_id: markId,
+				user_id: user.id,
+				vote_type: voteType,
+			})
+
+			if (error) throw error
+
+			// Обновляем счетчики в таблице trail_marks
+			const { data: votesData } = await supabase
+				.from('mark_confirmations')
+				.select('vote_type')
+				.eq('mark_id', markId)
+
+			const upVotes = votesData?.filter(v => v.vote_type === 'up').length || 0
+			const downVotes =
+				votesData?.filter(v => v.vote_type === 'down').length || 0
+
+			await supabase
+				.from('trail_marks')
+				.update({
+					confirmed_count: upVotes,
+					updated_at: new Date().toISOString(),
+				})
+				.eq('id', markId)
+
+			// Обновляем локальное состояние
+			setUserVotes(prev => ({
+				...prev,
+				[markId]: voteType,
+			}))
+
+			// Перезагружаем метки
+			loadMarks()
+			message.success('Голос учтен!')
+		} catch (err) {
+			console.error('Ошибка голосования:', err)
+			message.error('Ошибка при голосовании')
+		} finally {
+			setUpdatingVote(null)
+		}
+	}
+
+	// Инициализация обработчиков для кнопок в popup
+	// Инициализация обработчиков для кнопок в popup
+	useEffect(() => {
+		if (!map || marks.length === 0) return
+
+		const handlePopupOpen = e => {
+			const popup = e.popup
+			const content = popup._content
+
+			// Ищем ID метки в содержимом popup
+			const voteMatch = content.match(/id="vote-(up|down)-(\d+)"/)
+			const deleteMatch = content.match(/id="delete-(?:mark|confirm)-(\d+)"/)
+
+			if (voteMatch) {
+				const [_, type, markId] = voteMatch
+
+				setTimeout(() => {
+					const upBtn = document.getElementById(`vote-up-${markId}`)
+					const downBtn = document.getElementById(`vote-down-${markId}`)
+
+					if (upBtn) {
+						upBtn.onclick = () => handleVote(parseInt(markId), 'up')
+					}
+					if (downBtn) {
+						downBtn.onclick = () => handleVote(parseInt(markId), 'down')
+					}
+				}, 100)
+			}
+
+			if (deleteMatch) {
+				const [_, markId] = deleteMatch
+
+				setTimeout(() => {
+					const deleteBtn = document.getElementById(`delete-mark-${markId}`)
+					const deleteConfirmBtn = document.getElementById(
+						`delete-confirm-${markId}`
+					)
+
+					if (deleteBtn) {
+						deleteBtn.onclick = () => handleDeleteMark(parseInt(markId))
+					}
+					if (deleteConfirmBtn) {
+						deleteConfirmBtn.onclick = () => handleDeleteMark(parseInt(markId))
+					}
+				}, 100)
 			}
 		}
 
-		// Загружаем с небольшой задержкой чтобы карта успела инициализироваться
-		setTimeout(loadAndDisplayMarks, 500)
+		map.on('popupopen', handlePopupOpen)
 
-		// Очистка
 		return () => {
-			marks.forEach(layer => {
-				if (layer && map.hasLayer(layer)) {
-					map.removeLayer(layer)
-				}
-			})
+			map.off('popupopen', handlePopupOpen)
 		}
-	}, [map])
+	}, [map, marks, user, loadMarks])
+	// Автоматическое обновление каждые 30 секунд
+	useEffect(() => {
+		if (!map) return
 
+		// Первая загрузка
+		loadMarks()
+
+		// Сохраняем функцию для обновления извне
+		window.reloadMarks = loadMarks
+
+		// Интервал обновления
+		const interval = setInterval(loadMarks, 300000)
+
+		return () => {
+			clearInterval(interval)
+			if (window.reloadMarks) {
+				delete window.reloadMarks
+			}
+		}
+	}, [map, user, loadMarks])
+
+	// Вспомогательные функции
 	const getCategoryLabel = category => {
 		const labels = {
 			dangerous_turn: 'Опасный поворот',
@@ -4473,7 +4897,22 @@ const TrailMarksDisplay = ({ map }) => {
 		return labels[category] || category
 	}
 
-	if (error) {
+	const getCategoryIcon = category => {
+		const icons = {
+			dangerous_turn: '⚠️',
+			steep_slope: '⛰️',
+			branches: '🌿',
+			sand: '🏖️',
+			loggers: '🚜',
+			untrodden: '❄️',
+			perfect: '⭐',
+			other: '📍',
+		}
+		return icons[category] || '📍'
+	}
+
+	// Рендер состояния загрузки
+	if (loading && marks.length === 0) {
 		return (
 			<div
 				style={{
@@ -4481,31 +4920,71 @@ const TrailMarksDisplay = ({ map }) => {
 					top: '60px',
 					right: '20px',
 					zIndex: 1000,
-					maxWidth: '250px',
+					background: 'white',
+					padding: '12px 16px',
+					borderRadius: '8px',
+					boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+					border: '2px solid #1890ff',
+					display: 'flex',
+					alignItems: 'center',
 				}}
 			>
-				<Alert message='Ошибка' description={error} type='error' showIcon />
+				<Spin
+					indicator={<LoadingOutlined style={{ color: '#1890ff' }} spin />}
+				/>
+				<span style={{ marginLeft: '10px', fontSize: '13px', fontWeight: 500 }}>
+					Загрузка меток...
+				</span>
 			</div>
 		)
 	}
 
 	return (
-		<div
-			style={{
-				position: 'absolute',
-				top: '60px',
-				right: '20px',
-				zIndex: 1000,
-				background: 'rgba(255, 255, 255, 0.9)',
-				padding: '10px 15px',
-				borderRadius: '8px',
-				boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-				fontSize: '12px',
-				border: '1px solid #1890ff',
-			}}
-		>
-			📍 Меток на карте: {marks.length}
-		</div>
+		<>
+			{error && (
+				<div
+					style={{
+						position: 'absolute',
+						top: '60px',
+						right: '20px',
+						zIndex: 1000,
+						maxWidth: '300px',
+					}}
+				>
+					<Alert
+						message='Ошибка загрузки'
+						description={error}
+						type='error'
+						showIcon
+						closable
+						onClose={() => setError(null)}
+					/>
+				</div>
+			)}
+
+			{/* Счетчик меток */}
+			<div
+				style={{
+					position: 'absolute',
+					top: '60px',
+					right: '20px',
+					zIndex: 1000,
+					background: 'white',
+					padding: '10px 14px',
+					borderRadius: '8px',
+					boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+					fontSize: '13px',
+					fontWeight: 500,
+					border: '2px solid #52c41a',
+					color: '#389e0d',
+				}}
+			>
+				📍 Меток на карте: <strong>{marks.length}</strong>
+				<div
+					style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}
+				></div>
+			</div>
+		</>
 	)
 }
 
@@ -4514,9 +4993,23 @@ export default TrailMarksDisplay
 
 ## 📄 src/widgets/Map/ui/MapClickMenu.jsx
 ```
-import React, { useState } from 'react'
-import { FloatButton, Modal, Form, Input, Select, Radio, message } from 'antd'
-import { PlusOutlined, EnvironmentOutlined } from '@ant-design/icons'
+import React, { useState, useEffect } from 'react'
+import {
+	FloatButton,
+	Modal,
+	Form,
+	Input,
+	Select,
+	Radio,
+	message,
+	Button,
+} from 'antd'
+import {
+	PlusOutlined,
+	EnvironmentOutlined,
+	CloseOutlined,
+	CheckOutlined,
+} from '@ant-design/icons'
 import L from 'leaflet'
 import { supabase } from '../../../shared/api/supabase'
 import styles from './MapClickMenu.module.css'
@@ -4525,11 +5018,12 @@ const { Option } = Select
 const { TextArea } = Input
 
 const MapClickMenu = ({ map, user }) => {
-	const [clickPosition, setClickPosition] = useState(null)
 	const [modalVisible, setModalVisible] = useState(false)
 	const [drawingMode, setDrawingMode] = useState(false)
 	const [currentLine, setCurrentLine] = useState([])
+	const [clickPosition, setClickPosition] = useState(null)
 	const [form] = Form.useForm()
+	const [tempLine, setTempLine] = useState(null)
 
 	const categories = [
 		{ value: 'dangerous_turn', label: 'Опасный поворот', icon: '⚠️' },
@@ -4542,57 +5036,66 @@ const MapClickMenu = ({ map, user }) => {
 		{ value: 'other', label: 'Другое', icon: '📍' },
 	]
 
-	// Инициализация обработчиков кликов
-	React.useEffect(() => {
+	// Удаляем все обработчики при размонтировании
+	useEffect(() => {
+		return () => {
+			if (window.currentDrawingHandlers) {
+				cleanupDrawingHandlers()
+			}
+		}
+	}, [])
+
+	const cleanupDrawingHandlers = () => {
 		if (!map) return
 
-		const handleMapClick = e => {
-			setClickPosition(e.latlng)
+		// Убираем обработчик клика
+		if (window.currentDrawingHandlers?.click) {
+			map.off('click', window.currentDrawingHandlers.click)
+		}
+		window.currentDrawingHandlers = null
 
-			// Показываем всплывающее меню
-			if (!drawingMode) {
-				showContextMenu(e)
-			} 
+		// Убираем временную линию
+		if (window.currentTempLine && map.hasLayer(window.currentTempLine)) {
+			map.removeLayer(window.currentTempLine)
+			window.currentTempLine = null
 		}
 
-		map.on('click', handleMapClick)
-
-		return () => {
-			map.off('click', handleMapClick)
-		}
-	}, [map, drawingMode])
+		removeDrawingInstructions()
+	}
 
 	const showContextMenu = e => {
-		// Создаем всплывающее меню
+		if (!map) return // ← добавляем проверку
+
 		const menu = L.popup()
 			.setLatLng(e.latlng)
 			.setContent(
 				`
-        <div class="${styles.contextMenu}">
-          <h4>Добавить метку</h4>
-          <button onclick="window.addMarkerAtPoint('point', ${e.latlng.lat}, ${e.latlng.lng})">
-            📍 Точку
-          </button>
-          <button onclick="window.addMarkerAtPoint('line_start', ${e.latlng.lat}, ${e.latlng.lng})">
-            📏 Участок трассы
-          </button>
-          <button onclick="window.cancelMarker()">
-            ❌ Отмена
-          </button>
-        </div>
-      `
+			<div class="${styles.contextMenu}">
+				<h4>Добавить метку</h4>
+				<button onclick="window.addMarkerPoint(${e.latlng.lat}, ${e.latlng.lng})">
+					📍 Точку
+				</button>
+				<button onclick="window.startDrawingLine(${e.latlng.lat}, ${e.latlng.lng})">
+					📏 Участок трассы
+				</button>
+				<button onclick="window.cancelMarker()">
+					❌ Отмена
+				</button>
+			</div>
+		`
 			)
 			.openOn(map)
 
-		// Глобальные функции для кнопок
-		window.addMarkerAtPoint = (type, lat, lng) => {
+		window.addMarkerPoint = (lat, lng) => {
 			map.closePopup()
-			if (type === 'line_start') {
-				startDrawing([lat, lng])
-			} else {
-				setClickPosition({ lat, lng })
-				setModalVisible(true)
-			}
+			setClickPosition({ lat, lng })
+			setCurrentLine([])
+			setModalVisible(true)
+		}
+
+		window.startDrawingLine = (lat, lng) => {
+			map.closePopup()
+			startDrawing([lat, lng])
 		}
 
 		window.cancelMarker = () => {
@@ -4601,73 +5104,225 @@ const MapClickMenu = ({ map, user }) => {
 	}
 
 	const startDrawing = startPoint => {
-		setDrawingMode(true)
-		setCurrentLine([startPoint])
+		console.log('🎨 Начало рисования, точек:', startPoint)
 
-		message.info(
-			'Режим рисования: кликайте для добавления точек, двойной клик для завершения'
-		)
-
-		// Временная линия
-		if (window.tempLine) {
-			map.removeLayer(window.tempLine)
+		// Проверяем, не запущено ли уже рисование
+		if (drawingMode) {
+			message.warning('Рисование уже начато!')
+			return
 		}
 
-		// Обработчик для рисования
-		const drawingClickHandler = e => {
+		// Проверяем, не открыт ли уже инструкционный блок
+		if (window.drawingInstructions) {
+			removeDrawingInstructions()
+		}
+
+		setDrawingMode(true)
+		setCurrentLine([startPoint])
+		setClickPosition(null)
+
+		// Очищаем старые обработчики
+		cleanupDrawingHandlers()
+
+		// Создаем первую точку
+		window.currentTempLine = L.polyline([startPoint], {
+			color: '#ff0000',
+			weight: 3,
+			dashArray: '5, 10',
+			opacity: 0.7,
+		}).addTo(map)
+
+		// Обработчик клика для добавления точек
+		const handleClick = e => {
+			e.originalEvent.stopPropagation()
+			e.originalEvent.preventDefault()
+
+			console.log('🖱️ Клик в режиме рисования:', e.latlng)
+
+			const newPoint = [e.latlng.lat, e.latlng.lng]
+
 			setCurrentLine(prev => {
-				const newLine = [...prev, [e.latlng.lat, e.latlng.lng]]
+				const updatedLine = [...prev, newPoint]
+				console.log('📈 Добавлена точка, всего:', updatedLine.length)
 
-				// Обновляем временную линию
-				if (window.tempLine) {
-					map.removeLayer(window.tempLine)
+				// Удаляем старую линию если есть
+				if (window.currentTempLine && map.hasLayer(window.currentTempLine)) {
+					map.removeLayer(window.currentTempLine)
 				}
 
-				if (newLine.length > 1) {
-					window.tempLine = L.polyline(newLine, {
-						color: '#ff0000',
-						weight: 3,
-						dashArray: '5, 10',
-						opacity: 0.7,
-					}).addTo(map)
-				}
+				// Создаем новую линию
+				window.currentTempLine = L.polyline(updatedLine, {
+					color: '#ff0000',
+					weight: 3,
+					dashArray: '5, 10',
+					opacity: 0.7,
+				}).addTo(map)
 
-				return newLine
+				// Обновляем счетчик в инструкции
+				updateInstructionsCount(updatedLine.length)
+
+				return updatedLine
 			})
 		}
 
-		// Обработчик двойного клика для завершения
-		const finishDrawingHandler = e => {
-			e.originalEvent.stopPropagation()
-			if (currentLine.length >= 2) {
-				finishDrawing()
-			}
+		// Сохраняем обработчики
+		window.currentDrawingHandlers = {
+			click: handleClick,
 		}
 
-		map.on('click', drawingClickHandler)
-		map.on('dblclick', finishDrawingHandler)
+		// Вешаем обработчик
+		map.on('click', handleClick)
 
-		window.currentDrawingHandlers = {
-			click: drawingClickHandler,
-			dblclick: finishDrawingHandler,
+		showDrawingInstructions()
+		message.info('Рисование начато. Кликайте на карту для добавления точек.')
+	}
+	const finishDrawing = () => {
+		console.log('✅ Завершение рисования, всего точек:', currentLine.length)
+
+		if (currentLine.length < 2) {
+			message.warning('Нужно как минимум 2 точки для участка!')
+			return
+		}
+
+		setDrawingMode(false)
+
+		// Меняем цвет на зеленый для предпросмотра
+		if (window.currentTempLine && map.hasLayer(window.currentTempLine)) {
+			window.currentTempLine.setStyle({
+				color: '#52c41a',
+				weight: 4,
+				opacity: 0.8,
+				dashArray: null,
+			})
+		}
+
+		// Очищаем обработчики
+		cleanupDrawingHandlers()
+
+		// Открываем модальное окно
+		setModalVisible(true)
+		message.success('Участок нарисован! Заполните данные метки.')
+	}
+
+	const cancelDrawing = () => {
+		setDrawingMode(false)
+		setCurrentLine([])
+		cleanupDrawingHandlers()
+		message.info('Рисование отменено')
+	}
+
+	const showDrawingInstructions = () => {
+		removeDrawingInstructions()
+
+		window.drawingInstructions = L.control({ position: 'topright' })
+		window.drawingInstructions.onAdd = function () {
+			const div = L.DomUtil.create('div', 'drawing-instructions')
+
+			// Создаем содержимое с обработчиками сразу
+			div.innerHTML = `
+			<div style="
+				background: white; 
+				padding: 15px; 
+				border-radius: 8px; 
+				box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+				border: 3px solid #1890ff;
+				max-width: 250px;
+				font-size: 14px;
+			">
+				<div style="color: #1890ff; font-weight: bold; margin-bottom: 10px; font-size: 16px;">
+					🎯 Рисование участка
+				</div>
+				<div style="margin-bottom: 8px; color: #666;">
+					• <strong>Клик</strong> - добавить точку
+					<br>• <strong>Добавьте минимум 2 точки</strong>
+				</div>
+				<div style="color: #666; margin-bottom: 12px;">
+					Точек: <strong id="points-counter">${currentLine.length}</strong>
+				</div>
+				
+				<div style="display: flex; gap: 8px; margin-bottom: 10px;">
+					<button 
+						id="finish-drawing-btn" 
+						style="
+							flex: 1;
+							padding: 8px;
+							background: #52c41a; 
+							color: white; 
+							border: none; 
+							border-radius: 4px; 
+							cursor: pointer;
+							font-weight: bold;
+							font-size: 14px;
+						"
+					>
+						✓ Готово (${currentLine.length})
+					</button>
+					
+					<button 
+						id="cancel-drawing-btn" 
+						style="
+							flex: 1;
+							padding: 8px;
+							background: #ff4d4f; 
+							color: white; 
+							border: none; 
+							border-radius: 4px; 
+							cursor: pointer;
+							font-weight: bold;
+							font-size: 14px;
+						"
+					>
+						✕ Отмена
+					</button>
+				</div>
+				
+				<div style="font-size: 12px; color: #999; text-align: center;">
+					Двойной клик не работает - используйте кнопку "Готово"
+				</div>
+			</div>
+		`
+
+			// НЕМЕДЛЕННО добавляем обработчики
+			const finishBtn = div.querySelector('#finish-drawing-btn')
+			const cancelBtn = div.querySelector('#cancel-drawing-btn')
+
+			if (finishBtn) {
+				finishBtn.onclick = e => {
+					e.stopPropagation()
+					finishDrawing()
+				}
+			}
+
+			if (cancelBtn) {
+				cancelBtn.onclick = e => {
+					e.stopPropagation()
+					cancelDrawing()
+				}
+			}
+
+			return div
+		}
+
+		window.drawingInstructions.addTo(map)
+	}
+	const removeDrawingInstructions = () => {
+		if (window.drawingInstructions && map) {
+			map.removeControl(window.drawingInstructions)
+			window.drawingInstructions = null
 		}
 	}
 
-	const finishDrawing = () => {
-		setDrawingMode(false)
-		setModalVisible(true)
-
-		// Убираем обработчики
-		if (window.currentDrawingHandlers) {
-			map.off('click', window.currentDrawingHandlers.click)
-			map.off('dblclick', window.currentDrawingHandlers.dblclick)
-			window.currentDrawingHandlers = null
+	const updateInstructionsCount = count => {
+		// Обновляем счетчик в инструкции
+		const counter = document.getElementById('points-counter')
+		if (counter) {
+			counter.innerHTML = count
 		}
 
-		// Убираем временную линию
-		if (window.tempLine) {
-			map.removeLayer(window.tempLine)
-			window.tempLine = null
+		// Обновляем текст кнопки
+		const finishBtn = document.getElementById('finish-drawing-btn')
+		if (finishBtn) {
+			finishBtn.innerHTML = `✓ Готово (${count})`
 		}
 	}
 
@@ -4676,13 +5331,13 @@ const MapClickMenu = ({ map, user }) => {
 			let geometry
 
 			if (currentLine.length > 0) {
-				// Линия из точек
+				// Участок из нескольких точек
 				const coordinates = currentLine
 					.map(coord => `${coord[1]} ${coord[0]}`)
 					.join(', ')
 				geometry = `LINESTRING(${coordinates})`
 			} else if (clickPosition) {
-				// Одиночная точка (делаем маленький отрезок)
+				// Одиночная точка - делаем маленький отрезок
 				const lat = clickPosition.lat
 				const lng = clickPosition.lng
 				geometry = `LINESTRING(${lng} ${lat}, ${lng + 0.0001} ${lat + 0.0001})`
@@ -4695,6 +5350,18 @@ const MapClickMenu = ({ map, user }) => {
 					? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 					: null
 
+			// Получаем username из profiles
+			let username = 'Аноним'
+			if (user) {
+				const { data: profile } = await supabase
+					.from('profiles')
+					.select('username')
+					.eq('id', user.id)
+					.single()
+
+				username = profile?.username || user.email?.split('@')[0] || 'Аноним'
+			}
+
 			const { data, error } = await supabase
 				.from('trail_marks')
 				.insert({
@@ -4704,7 +5371,7 @@ const MapClickMenu = ({ map, user }) => {
 					geometry: geometry,
 					description: values.description,
 					expiry_time: expiryTime,
-					created_by_username: user?.email?.split('@')[0] || 'Аноним',
+					created_by_username: username, // Используем username из профиля
 					confirmed_count: 0,
 				})
 				.select()
@@ -4717,9 +5384,15 @@ const MapClickMenu = ({ map, user }) => {
 			setCurrentLine([])
 			setClickPosition(null)
 
-			// Показываем метку на карте
-			if (data && data[0]) {
-				showMarkOnMap(data[0])
+			// Убираем временную линию
+			if (tempLine) {
+				map.removeLayer(tempLine)
+				setTempLine(null)
+			}
+
+			// Перезагружаем метки
+			if (window.reloadMarks) {
+				window.reloadMarks()
 			}
 		} catch (error) {
 			console.error('Ошибка сохранения:', error)
@@ -4727,70 +5400,73 @@ const MapClickMenu = ({ map, user }) => {
 		}
 	}
 
-	const showMarkOnMap = mark => {
-		if (!map) return
+	// Инициализация кликов на карте
 
-		const style =
-			mark.type === 'permanent'
-				? { color: '#f5222d', weight: 4, opacity: 0.8 }
-				: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
 
-		// TODO: Парсинг geometry из базы
-		// Пока временная визуализация
-		const line = L.polyline(
-			[
-				[52.4169, 103.7388],
-				[52.417, 103.739],
-			],
-			style
-		).addTo(map)
+	useEffect(() => {
+		if (!map || !user) return // Добавляем проверку !user
 
-		const category = categories.find(c => c.value === mark.category)
-		line.bindPopup(`
-      <div class="${styles.markPopup}">
-        <div style="font-size: 20px; margin-bottom: 5px">${
-					category?.icon || '📍'
-				}</div>
-        <strong>${category?.label || mark.category}</strong><br>
-        ${mark.description || ''}
-      </div>
-    `)
-	}
+		const handleMapClick = e => {
+			if (!drawingMode) {
+				showContextMenu(e)
+			}
+		}
+
+		map.on('click', handleMapClick)
+
+		return () => {
+			map.off('click', handleMapClick)
+			cleanupDrawingHandlers()
+		}
+	}, [map, drawingMode, user]) // Добавляем user в зависимости
 
 	return (
 		<>
-			{/* Плавающая кнопка для быстрого доступа */}
-			<div className={styles.floatButtonContainer}>
-				<FloatButton
-					icon={<EnvironmentOutlined />}
-					type='primary'
-					tooltip='Добавить метку на карту'
-					onClick={() => {
-						if (map) {
-							const center = map.getCenter()
-							showContextMenu({ latlng: center })
-						}
-					}}
-					className={styles.floatButton}
-				/>
-			</div>
+			{/* Кнопка добавления метки */}
+			{user && (
+				<div className={styles.floatButtonContainer}>
+					<FloatButton
+						icon={<EnvironmentOutlined />}
+						type='primary'
+						tooltip='Добавить метку на карту'
+						onClick={() => {
+							if (map) {
+								const center = map.getCenter()
+								showContextMenu({ latlng: center })
+							}
+						}}
+						className={styles.floatButton}
+					/>
+				</div>
+			)}
 
+			{/* Модальное окно */}
 			<Modal
 				title={
-					currentLine.length > 0
-						? 'Добавить метку участка'
-						: 'Добавить метку точки'
+					currentLine.length > 0 ? '📏 Добавить участок' : '📍 Добавить точку'
 				}
 				open={modalVisible}
 				onCancel={() => {
 					setModalVisible(false)
 					setCurrentLine([])
 					setClickPosition(null)
+					if (tempLine) {
+						map.removeLayer(tempLine)
+						setTempLine(null)
+					}
 				}}
 				onOk={() => form.submit()}
 				okText='Сохранить'
 				cancelText='Отмена'
 				width={500}
+				footer={[
+					<Button key='cancel' onClick={() => setModalVisible(false)}>
+						Отмена
+					</Button>,
+					<Button key='submit' type='primary' onClick={() => form.submit()}>
+						<CheckOutlined /> Сохранить метку
+					</Button>,
+				]}
 			>
 				<Form
 					form={form}
@@ -4813,7 +5489,7 @@ const MapClickMenu = ({ map, user }) => {
 						label='Что на трассе?'
 						rules={[{ required: true }]}
 					>
-						<Select placeholder='Выберите тип проблемы'>
+						<Select placeholder='Выберите тип'>
 							{categories.map(cat => (
 								<Option key={cat.value} value={cat.value}>
 									<span style={{ marginRight: 8 }}>{cat.icon}</span>
@@ -4825,17 +5501,19 @@ const MapClickMenu = ({ map, user }) => {
 
 					<Form.Item name='description' label='Описание (необязательно)'>
 						<TextArea
-							placeholder='Подробности: глубина снега, состояние трассы и т.д.'
+							placeholder="Например: 'глубокий снег на повороте' или 'много веток после вчерашнего ветра'"
 							rows={3}
 						/>
 					</Form.Item>
 
 					<div className={styles.coordinatesInfo}>
 						{currentLine.length > 0 ? (
-							<p>Участок: {currentLine.length} точек</p>
+							<p>
+								📏 Участок: <strong>{currentLine.length}</strong> точек
+							</p>
 						) : clickPosition ? (
 							<p>
-								Точка: {clickPosition.lat.toFixed(6)},{' '}
+								📍 Точка: {clickPosition.lat.toFixed(6)},{' '}
 								{clickPosition.lng.toFixed(6)}
 							</p>
 						) : null}
@@ -4853,52 +5531,61 @@ export default MapClickMenu
 ```
 .contextMenu {
   padding: 10px;
-  min-width: 200px;
+  min-width: 220px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .contextMenu h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
   color: #1890ff;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .contextMenu button {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 8px 12px;
-  margin-bottom: 5px;
-  background: #f5f5f5;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: white;
   border: 1px solid #d9d9d9;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   text-align: left;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .contextMenu button:hover {
   background: #1890ff;
   color: white;
   border-color: #1890ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
 }
 
 .markPopup {
-  min-width: 200px;
+  min-width: 220px;
   font-size: 14px;
 }
 
 .coordinatesInfo {
-  padding: 10px;
+  padding: 12px;
   background: #f6ffed;
   border: 1px solid #b7eb8f;
-  border-radius: 4px;
-  margin-top: 10px;
-  font-size: 12px;
+  border-radius: 6px;
+  margin-top: 12px;
+  font-size: 13px;
   color: #389e0d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.floatButton {
-  position: absolute;
-  bottom: 100px;
-  right: 24px;
-  z-index: 1000;
+.coordinatesInfo p {
+  margin: 0;
 }
 
 .floatButtonContainer {
@@ -4910,12 +5597,98 @@ export default MapClickMenu
 
 .floatButton {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
 }
 
 .floatButton:hover {
-  transform: scale(1.05);
-  transition: transform 0.2s;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }```
+
+## 📄 src/widgets/Map/ui/trailsData.js
+```
+export const trails = [
+	{
+		id: 'lbk',
+		name: 'ЛБК Ангарский',
+		center: [52.41911, 103.74019],
+		zoom: 14,
+		description: 'Лыжная база Ангарск, малый круг',
+	},
+	{
+		id: 'akadem',
+		name: 'Академгородок',
+		center: [52.24577, 104.25916],
+		zoom: 15,
+		description: 'Академгородок Иркутск',
+	},
+	{
+		id: 'teplye',
+		name: 'Тёплые озера',
+		center: [52.24331, 104.29682],
+		zoom: 15,
+		description: 'Тёплые озера',
+	},
+	{
+		id: 'ersh',
+		name: 'Ершовский лес, Якоби - Крокодил',
+		center: [52.21816, 104.32713],
+		zoom: 14,
+		description: 'Ершовский лес',
+	},
+	{
+		id: 'ishih',
+		name: 'Исхи, Топка',
+		center: [52.23199, 104.40072],
+		zoom: 14,
+		description: 'Исхи, Топка',
+	},
+	{
+		id: 'dinamo',
+		name: 'Динамо',
+		center: [52.31187, 104.35624],
+		zoom: 14,
+		description: 'Динамо Иркутск',
+	},
+	{
+		id: 'nlo',
+		name: 'НЛО Объездная',
+		center: [52.34101, 104.06052],
+		zoom: 14,
+		description: 'НЛО Объездная',
+	},
+	{
+		id: 'karery',
+		name: 'Карьеры',
+		center: [52.22813, 104.09221],
+		zoom: 14,
+		description: 'Карьеры',
+	},
+	{
+		id: 'chistye',
+		name: 'Чистые Ключи - Моты',
+		center: [52.13556, 103.96366],
+		zoom: 12,
+		description: 'Чистые Ключи - Моты',
+	},
+	{
+		id: 'snezhnaya',
+		name: 'Снежная гора',
+		center: [52.32247, 105.10908],
+		zoom: 14,
+		description: 'Снежная гора',
+	},
+	{
+		id: 'bam',
+		name: 'БАМ',
+		center: [51.98182, 104.04374],
+		zoom: 12,
+		description: 'БАМ',
+	},
+]
+
+export const defaultTrail = trails[0] // ЛБК Ангарский
+```
 
 ## 📄 src/widgets/Map/ui/MarkControls.jsx
 ```
@@ -5544,26 +6317,26 @@ const TrailMarksLayer = ({ map }) => {
 		}
 		return labels[category] || category
 	}
-const renderMark = mark => {
-	if (!map || !mark) return null
+	const renderMark = mark => {
+		if (!map || !mark) return null
 
-	try {
-		// Парсим geometry из базы (пока заглушка)
-		const style =
-			mark.type === 'permanent'
-				? { color: '#f5222d', weight: 4, opacity: 0.8 }
-				: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
+		try {
+			// Парсим geometry из базы (пока заглушка)
+			const style =
+				mark.type === 'permanent'
+					? { color: '#f5222d', weight: 4, opacity: 0.8 }
+					: { color: '#faad14', weight: 3, opacity: 0.6, dashArray: '5, 10' }
 
-		// Временные координаты - потом заменим на парсинг
-		const coordinates = [
-			[52.4169 + Math.random() * 0.001, 103.7388 + Math.random() * 0.001],
-			[52.417 + Math.random() * 0.001, 103.739 + Math.random() * 0.001],
-			[52.4168 + Math.random() * 0.001, 103.7386 + Math.random() * 0.001],
-		]
+			// Временные координаты - потом заменим на парсинг
+			const coordinates = [
+				[52.4169 + Math.random() * 0.001, 103.7388 + Math.random() * 0.001],
+				[52.417 + Math.random() * 0.001, 103.739 + Math.random() * 0.001],
+				[52.4168 + Math.random() * 0.001, 103.7386 + Math.random() * 0.001],
+			]
 
-		const line = L.polyline(coordinates, style).addTo(map)
+			const line = L.polyline(coordinates, style).addTo(map)
 
-		const popupContent = `
+			const popupContent = `
       <div style="min-width: 200px">
         <strong>${mark.category}</strong><br>
         <div>Тип: ${
@@ -5579,13 +6352,13 @@ const renderMark = mark => {
       </div>
     `
 
-		line.bindPopup(popupContent)
-		return line
-	} catch (err) {
-		console.error('Ошибка отрисовки метки:', err, mark)
-		return null
+			line.bindPopup(popupContent)
+			return line
+		} catch (err) {
+			console.error('Ошибка отрисовки метки:', err, mark)
+			return null
+		}
 	}
-}
 	if (loading) {
 		return (
 			<div
@@ -5628,6 +6401,50 @@ const renderMark = mark => {
 
 export default TrailMarksLayer
 ```
+
+## 📄 src/widgets/Map/ui/TrailSelector.module.css
+```
+.selectorContainer {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.selectorLabel {
+	font-size: 16px;
+	font-weight: 500;
+	color: #262626;
+	white-space: nowrap;
+}
+
+.selector {
+	min-width: 250px;
+}
+
+.trailDescription {
+	margin-top: 8px;
+	font-size: 13px;
+	color: #8c8c8c;
+	background: #fafafa;
+	padding: 8px 12px;
+	border-radius: 6px;
+	border-left: 3px solid #1890ff;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+	.selectorContainer {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+	
+	.selector {
+		width: 100%;
+		min-width: unset;
+	}
+}```
 
 ## 📄 src/widgets/Map/ui/Map.module.css
 ```
@@ -5702,28 +6519,228 @@ export default TrailMarksLayer
   align-items: center;
   justify-content: center;
   color: #999;
+}
+
+.mapContainer {
+  width: 100%;
+  height: 500px;
+  min-height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid #f0f0f0;
+  position: relative;
+}
+
+/* Убираем флаг атрибуции */
+.mapContainer :global(.leaflet-attribution-flag) {
+  display: none !important;
+}
+
+/* Стили для иконок меток */
+.mapContainer :global(.custom-div-icon) {
+  background: none !important;
+  border: none !important;
+  text-align: center;
+  /* Убираем font-size отсюда, он теперь inline в html */
+  text-shadow: 
+    0.5px 0.5px 0 white,     /* Уменьшил обводку */
+    -0.5px -0.5px 0 white,
+    0.5px -0.5px 0 white,
+    -0.5px 0.5px 0 white;
+}
+
+/* Эффект при наведении на метку */
+.mapContainer :global(.leaflet-marker-icon:hover) {
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.3));
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Стили для popup кнопок */
+.mapContainer :global(.leaflet-popup-content button:hover:not(:disabled)) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.mapContainer :global(.leaflet-popup-content button:active:not(:disabled)) {
+  transform: translateY(0);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .mapContainer {
+    height: 400px !important;
+    min-height: 400px !important;
+  }
+}
+
+.card {
+  margin-bottom: 20px;
+}
+
+.legend {
+  margin-top: 15px;
+  padding: 15px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.legend h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #1890ff;
+}
+
+.legend ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.legend li {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Стили для кнопок в контекстном меню */
+.contextMenu {
+  padding: 10px;
+  min-width: 200px;
+}
+
+.contextMenu h4 {
+  margin: 0 0 10px 0;
+  color: #1890ff;
+}
+
+.contextMenu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 5px;
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.contextMenu button:hover {
+  background: #1890ff;
+  color: white;
+  border-color: #1890ff;
+}
+
+.markPopup {
+  min-width: 200px;
+  font-size: 14px;
+}
+
+.coordinatesInfo {
+  padding: 10px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #389e0d;
+}
+
+.floatButtonContainer {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.floatButton {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.floatButton:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s;
+}
+
+/* Анимация счетчика меток */
+.marksCounter {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(82, 196, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0); }
+}
+
+/* Стили для инструкции рисования */
+.drawingInstructions {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Стили для заголовка с селектором */
+.cardHeader {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.cardTitle {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	color: #262626;
+}
+
+/* Адаптивность заголовка */
+@media (max-width: 768px) {
+	.cardHeader {
+		gap: 8px;
+	}
+	
+	.cardTitle {
+		font-size: 18px;
+	}
+}
+
+.legendSubtext {
+	font-size: 12px;
+	color: #999;
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid #f0f0f0;
 }```
 
 ## 📄 src/widgets/Map/ui/Map.jsx
 ```
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Card } from 'antd'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import MapClickMenu from './MapClickMenu'
-import styles from './Map.module.css'
 import TrailMarksDisplay from './TrailMarksDisplay'
+import TrailSelector from './TrailSelector'
+import GpxLayer from './GpxLayer'
+
+import { trails, defaultTrail } from './trailsData'
+import styles from './Map.module.css'
 
 const Map = ({ user }) => {
 	const mapContainerRef = useRef(null)
 	const mapInstanceRef = useRef(null)
+	const [selectedTrail, setSelectedTrail] = useState(defaultTrail)
 
+	// Инициализация карты
 	useEffect(() => {
 		const initMap = () => {
 			if (!mapInstanceRef.current && mapContainerRef.current) {
 				const mapInstance = L.map(mapContainerRef.current).setView(
-					[52.416925, 103.738906],
-					15
+					selectedTrail.center,
+					selectedTrail.zoom
 				)
 
 				L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -5743,32 +6760,101 @@ const Map = ({ user }) => {
 				mapInstanceRef.current = null
 			}
 		}
-	}, [])
+	}, []) // Инициализируем карту только один раз
 
-return (
-	<Card className={styles.card} title='Карта трасс'>
-		<div ref={mapContainerRef} className={styles.mapContainer}>
-			{mapInstanceRef.current && user && (
-				<MapClickMenu map={mapInstanceRef.current} user={user} />
-			)}
-			{mapInstanceRef.current && (
-				<TrailMarksDisplay map={mapInstanceRef.current} />
-			)}
-		</div>
+	// Обновление центра карты при выборе трассы
+	useEffect(() => {
+		if (mapInstanceRef.current && selectedTrail) {
+			mapInstanceRef.current.setView(selectedTrail.center, selectedTrail.zoom)
+		}
+	}, [selectedTrail])
 
-		<div className={styles.legend}>
-			<h4>Легенда:</h4>
-			<ul>
-				<li>🔴 Постоянные метки</li>
-				<li>🟡 Временные метки</li>
-				<li>🟢 Треки заездов</li>
-			</ul>
-		</div>
-	</Card>
-)
+	const handleTrailChange = trail => {
+		setSelectedTrail(trail)
+	}
+
+	return (
+		<Card className={styles.card}>
+			<div className={styles.cardHeader}>
+				<TrailSelector
+					selectedTrail={selectedTrail}
+					onTrailChange={handleTrailChange}
+				/>
+			</div>
+
+			<div ref={mapContainerRef} className={styles.mapContainer}>
+				{mapInstanceRef.current && user && (
+					<MapClickMenu map={mapInstanceRef.current} user={user} />
+				)}
+				{mapInstanceRef.current && (
+					<TrailMarksDisplay map={mapInstanceRef.current} user={user} />
+				)}
+				{mapInstanceRef.current && (
+					<GpxLayer map={mapInstanceRef.current} />
+				)}{' '}
+			</div>
+
+			<div className={styles.legend}>
+				<h4>Легенда меток:</h4>
+				<ul>
+					<li>⚠️ Опасный поворот</li>
+					<li>⛰️ Крутой склон</li>
+					<li>🌿 Ветки на трассе</li>
+					<li>🏖️ Песок/грунт</li>
+					<li>🚜 Следы лесовозов</li>
+					<li>❄️ Незатроплено</li>
+					<li>⭐ Идеально</li>
+					<li>📍 Другое</li>
+				</ul>
+				<div className={styles.legendSubtext}>
+					🔒 Постоянная метка | ⏰ Временная (24ч)
+				</div>
+			</div>
+		</Card>
+	)
 }
 
 export default Map
+```
+
+## 📄 src/widgets/Map/ui/TrailSelector.jsx
+```
+import React from 'react'
+import { Select } from 'antd'
+import { trails, defaultTrail } from './trailsData'
+import styles from './TrailSelector.module.css'
+
+const { Option } = Select
+
+const TrailSelector = ({ selectedTrail, onTrailChange }) => {
+	const handleChange = value => {
+		const trail = trails.find(t => t.id === value) || defaultTrail
+		onTrailChange(trail)
+	}
+
+	return (
+		<>
+			<div className={styles.selectorContainer}>
+				<span className={styles.selectorLabel}>Центрировать карту:</span>
+				<Select
+					className={styles.selector}
+					value={selectedTrail.id}
+					onChange={handleChange}
+					placeholder='Выберите трассу'
+					size='large'
+				>
+					{trails.map(trail => (
+						<Option key={trail.id} value={trail.id}>
+							{trail.name}
+						</Option>
+					))}
+				</Select>
+			</div>
+		</>
+	)
+}
+
+export default TrailSelector
 ```
 
 ## 📄 src/widgets/Map/index.js
@@ -5778,8 +6864,6 @@ export default Map
 ```
 
 ```
-
-
 # 🎿 ПОЛНЫЙ КОНТЕКСТ ПРОЕКТА "SKITRACK"
 
 ## 📋 **Исходное состояние проекта** (на начало беседы)

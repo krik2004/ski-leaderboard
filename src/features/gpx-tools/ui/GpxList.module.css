@@ -1,0 +1,147 @@
+/* Основной контейнер */
+.container {
+  width: 100%;
+}
+
+/* Карточка трека */
+.trackCard {
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #f0f0f0;
+  margin-bottom: 12px;
+}
+
+.trackCard:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.trackCard.selected {
+  border-color: #1890ff;
+  background-color: #f0f8ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+/* Содержимое карточки */
+.cardContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .cardContent {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Основная информация */
+.mainInfo {
+  flex: 1;
+  min-width: 0; /* Для корректного обрезания текста */
+}
+
+.trackHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.filename {
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verifiedTag {
+  font-size: 11px;
+  padding: 0 6px;
+  height: 20px;
+  line-height: 18px;
+}
+
+/* Метаданные */
+.metadata {
+  margin-top: 8px;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 16px;
+  margin-bottom: 4px;
+}
+
+.metaValue {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.timeTag {
+  font-weight: 600;
+  margin: 0;
+  padding: 2px 6px;
+  font-size: 13px;
+}
+
+.comment {
+  font-size: 13px;
+  color: #666;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Действия */
+.actions {
+  flex-shrink: 0;
+}
+
+/* Список */
+.list {
+  margin-top: 16px;
+}
+
+/* Информационное уведомление */
+.infoAlert {
+  margin-bottom: 20px;
+}
+
+/* Пустой список */
+.emptyContainer {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.emptySubtext {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* Адаптивность */
+@media (max-width: 576px) {
+  .trackHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .metaItem {
+    display: flex;
+    margin-right: 12px;
+  }
+  
+  .comment {
+    max-width: 200px;
+  }
+}

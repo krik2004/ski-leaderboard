@@ -1,0 +1,74 @@
+/* Основной контейнер */
+.container {
+  width: 100%;
+  min-height: 500px;
+}
+
+/* Контент */
+.content {
+  width: 100%;
+}
+
+/* Заголовок */
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  color: #1890ff;
+  margin-bottom: 4px !important;
+}
+
+.subtitle {
+  font-size: 14px;
+}
+
+/* Табы */
+.tabs {
+  width: 100%;
+}
+
+.tabLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Уведомления */
+.authAlert {
+  margin: 20px;
+}
+
+.selectAlert {
+  margin-top: 20px;
+}
+
+/* Загрузка */
+.loadingContainer {
+  text-align: center;
+  padding: 40px;
+}
+
+.loadingText {
+  margin-top: 16px;
+  color: #666;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .container {
+    padding: 12px !important;
+  }
+  
+  .title {
+    font-size: 18px !important;
+  }
+  
+  .subtitle {
+    font-size: 12px;
+  }
+  
+  .tabs {
+    font-size: 14px;
+  }
+}
