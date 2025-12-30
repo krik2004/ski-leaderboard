@@ -351,26 +351,6 @@ function App() {
 							]}
 						/>
 
-						<div style={{ marginTop: '20px' }}>
-							{activeTab === 'leaderboard' && (
-								<Leaderboard
-									times={times}
-									user={user}
-									onTimeUpdated={fetchTimes}
-								/>
-							)}
-							{activeTab === 'map' && <Map user={user} />}
-							{activeTab === 'add' && (
-								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
-							)}
-							{activeTab === 'profile' && user && (
-								<Profile user={user} onUpdate={fetchTimes} />
-							)}
-							{activeTab === 'profile' && !user && (
-								<Auth onLoginSuccess={setUser} />
-							)}
-							{activeTab === 'about' && <About />}
-						</div>
 					</Card>
 				) : (
 					// Мобильная версия без лишних оберток
