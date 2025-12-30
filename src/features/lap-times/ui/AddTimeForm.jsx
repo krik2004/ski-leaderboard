@@ -235,8 +235,13 @@ export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
 		<Card
 			title={
 				<Space>
-					<PlusOutlined />
-					<span>Добавить новый заезд</span>
+					{user ? (
+						<span>Добавить новый заезд</span>
+					) : (
+						<span style={{ color: '#faad14' }}>
+							⚠️ Для добавления заезда необходимо войти в систему
+						</span>
+					)}
 				</Space>
 			}
 			bordered={false}
@@ -383,19 +388,21 @@ export default function AddTimeForm({ user, onTimeAdded, isMobile }) {
 							<Button
 								type='primary'
 								htmlType='submit'
-								icon={<PlusOutlined />}
 								loading={loading}
-								disabled={uploading}
+								disabled={uploading || !user} // Добавляем !user
 								size='large'
 								block={isMobile}
 								style={{
-									backgroundColor: '#52c41a',
-									borderColor: '#52c41a',
+									backgroundColor: !user ? '#d9d9d9' : '#52c41a',
+									borderColor: !user ? '#d9d9d9' : '#52c41a',
 									height: '48px',
 									fontSize: '16px',
+									cursor: !user ? 'not-allowed' : 'pointer',
 								}}
 							>
-								{uploading
+								{!user
+									? '🔒 Требуется вход'
+									: uploading
 									? 'Загрузка трека...'
 									: loading
 									? 'Добавление...'

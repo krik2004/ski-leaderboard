@@ -407,15 +407,14 @@ const MapClickMenu = ({ map, user }) => {
 
 	// Инициализация кликов на карте
 
+
 	useEffect(() => {
-		if (!map) return
+		if (!map || !user) return // Добавляем проверку !user
 
 		const handleMapClick = e => {
-			// Если в режиме рисования - НЕ показываем контекстное меню
 			if (!drawingMode) {
 				showContextMenu(e)
 			}
-			// Если в режиме рисования - обработчик в startDrawing сам обработает клик
 		}
 
 		map.on('click', handleMapClick)
@@ -424,25 +423,27 @@ const MapClickMenu = ({ map, user }) => {
 			map.off('click', handleMapClick)
 			cleanupDrawingHandlers()
 		}
-	}, [map, drawingMode]) // Добавляем drawingMode в зависимости
+	}, [map, drawingMode, user]) // Добавляем user в зависимости
 
 	return (
 		<>
 			{/* Кнопка добавления метки */}
-			<div className={styles.floatButtonContainer}>
-				<FloatButton
-					icon={<EnvironmentOutlined />}
-					type='primary'
-					tooltip='Добавить метку на карту'
-					onClick={() => {
-						if (map) {
-							const center = map.getCenter()
-							showContextMenu({ latlng: center })
-						}
-					}}
-					className={styles.floatButton}
-				/>
-			</div>
+			{user && (
+				<div className={styles.floatButtonContainer}>
+					<FloatButton
+						icon={<EnvironmentOutlined />}
+						type='primary'
+						tooltip='Добавить метку на карту'
+						onClick={() => {
+							if (map) {
+								const center = map.getCenter()
+								showContextMenu({ latlng: center })
+							}
+						}}
+						className={styles.floatButton}
+					/>
+				</div>
+			)}
 
 			{/* Модальное окно */}
 			<Modal

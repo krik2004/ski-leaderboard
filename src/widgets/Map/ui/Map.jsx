@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css'
 import MapClickMenu from './MapClickMenu'
 import TrailMarksDisplay from './TrailMarksDisplay'
 import TrailSelector from './TrailSelector'
+import GpxLayer from './GpxLayer'
+
 import { trails, defaultTrail } from './trailsData'
 import styles from './Map.module.css'
 
@@ -68,6 +70,9 @@ const Map = ({ user }) => {
 				{mapInstanceRef.current && (
 					<TrailMarksDisplay map={mapInstanceRef.current} user={user} />
 				)}
+				{mapInstanceRef.current && (
+					<GpxLayer map={mapInstanceRef.current} />
+				)}{' '}
 			</div>
 
 			<div className={styles.legend}>

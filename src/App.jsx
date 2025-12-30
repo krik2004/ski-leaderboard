@@ -35,10 +35,10 @@ function App() {
 	const [user, setUser] = useState(null)
 	const [times, setTimes] = useState([])
 	const [loading, setLoading] = useState(true)
-const [activeTab, setActiveTab] = useState(() => {
-  const saved = localStorage.getItem('ski-track-active-tab');
-  return saved || 'leaderboard';
-});
+	const [activeTab, setActiveTab] = useState(() => {
+		const saved = localStorage.getItem('ski-track-active-tab')
+		return saved || 'leaderboard'
+	})
 	const [isMobile, setIsMobile] = useState(false)
 
 	// Определяем мобильное устройство
@@ -53,35 +53,34 @@ const [activeTab, setActiveTab] = useState(() => {
 		return () => window.removeEventListener('resize', checkMobile)
 	}, [])
 
-useEffect(() => {
-	supabase.auth.getSession().then(({ data: { session } }) => {
-		setUser(session?.user || null)
-		setLoading(false)
+	useEffect(() => {
+		supabase.auth.getSession().then(({ data: { session } }) => {
+			setUser(session?.user || null)
+			setLoading(false)
 
-		// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
-		const savedTab = localStorage.getItem('ski-track-active-tab')
-		if (
-			savedTab &&
-			['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
-		) {
-			setActiveTab(savedTab)
-		}
-	})
+			// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
+			const savedTab = localStorage.getItem('ski-track-active-tab')
+			if (
+				savedTab &&
+				['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
+			) {
+				setActiveTab(savedTab)
+			}
+		})
 
-	const {
-		data: { subscription },
-	} = supabase.auth.onAuthStateChange((_event, session) => {
-		setUser(session?.user || null)
-	})
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setUser(session?.user || null)
+		})
 
-	return () => subscription.unsubscribe()
-}, [])
+		return () => subscription.unsubscribe()
+	}, [])
 
 	useEffect(() => {
-		if (user) {
-			fetchTimes()
-		}
-	}, [user])
+		// Загружаем заезды ВСЕГДА, даже для гостей
+		fetchTimes()
+	}, [user]) // Добавляем user в зависимости
 
 	async function fetchTimes() {
 		try {
@@ -143,35 +142,35 @@ useEffect(() => {
 			</div>
 		)
 	}
-
-	if (!user) {
-		return (
-			<div
-				style={{
-					minHeight: '100vh',
-					padding: isMobile ? '10px' : '20px',
-					background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-				}}
-			>
-				<div
-					style={{
-						width: '100%',
-						maxWidth: '500px',
-						padding: isMobile ? '15px' : '30px',
-					}}
-				>
-					<Auth onLoginSuccess={setUser} />
-				</div>
-			</div>
-		)
-	}
+// Если пользователь не авторизован
+	// if (!user) {
+	// 	return (
+	// 		<div
+	// 			style={{
+	// 				minHeight: '100vh',
+	// 				padding: isMobile ? '10px' : '20px',
+	// 				background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+	// 				display: 'flex',
+	// 				alignItems: 'center',
+	// 				justifyContent: 'center',
+	// 			}}
+	// 		>
+	// 			<div
+	// 				style={{
+	// 					width: '100%',
+	// 					maxWidth: '500px',
+	// 					padding: isMobile ? '15px' : '30px',
+	// 				}}
+	// 			>
+	// 				<Auth onLoginSuccess={setUser} />
+	// 			</div>
+	// 		</div>
+	// 	)
+	// }
 
 	const handleTabChange = key => {
-		setActiveTab(key);
-		localStorage.setItem('ski-track-active-tab', key);
+		setActiveTab(key)
+		localStorage.setItem('ski-track-active-tab', key)
 	}
 
 	return (
@@ -220,28 +219,57 @@ useEffect(() => {
 						gap: isMobile ? '6px' : '10px',
 					}}
 				>
-					<Button
-						type='text'
-						icon={<UserOutlined />}
-						onClick={() => setActiveTab('profile')}
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							padding: isMobile ? '4px 8px' : '8px 12px',
-							fontSize: isMobile ? '12px' : '14px',
-						}}
-					>
-						{!isMobile && user.email}
-					</Button>
-					<Button
-						type='text'
-						icon={<LogoutOutlined />}
-						onClick={handleLogout}
-						danger
-						size={isMobile ? 'small' : 'middle'}
-					>
-						{!isMobile && 'Выйти'}
-					</Button>
+					{user ? (
+						// Для авторизованных пользователей
+						<>
+							<Button
+								type='text'
+								icon={<UserOutlined />}
+								onClick={() => setActiveTab('profile')}
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									padding: isMobile ? '4px 8px' : '8px 12px',
+									fontSize: isMobile ? '12px' : '14px',
+								}}
+							>
+								{!isMobile && user.email}
+							</Button>
+							<Button
+								type='text'
+								icon={<LogoutOutlined />}
+								onClick={handleLogout}
+								danger
+								size={isMobile ? 'small' : 'middle'}
+							>
+								{!isMobile && 'Выйти'}
+							</Button>
+						</>
+					) : (
+						// Для гостей
+						<>
+							<Button
+								type='text'
+								icon={<UserOutlined />}
+								onClick={() => setActiveTab('profile')}
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									padding: isMobile ? '4px 8px' : '8px 12px',
+									fontSize: isMobile ? '12px' : '14px',
+								}}
+							>
+								{!isMobile && 'Гость'}
+							</Button>
+							<Button
+								type='primary'
+								onClick={() => setActiveTab('profile')}
+								size={isMobile ? 'small' : 'middle'}
+							>
+								Войти
+							</Button>
+						</>
+					)}
 				</div>
 			</AntHeader>
 
@@ -310,8 +338,11 @@ useEffect(() => {
 							{activeTab === 'add' && (
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 							)}
-							{activeTab === 'profile' && (
+							{activeTab === 'profile' && user && (
 								<Profile user={user} onUpdate={fetchTimes} />
+							)}
+							{activeTab === 'profile' && !user && (
+								<Auth onLoginSuccess={setUser} />
 							)}
 							{activeTab === 'about' && <About />}
 						</div>
