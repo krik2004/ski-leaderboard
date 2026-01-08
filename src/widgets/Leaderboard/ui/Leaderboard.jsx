@@ -350,7 +350,7 @@ const Leaderboard = ({ times, user, onTimeUpdated, isMobile = false }) => {
 					🔒 Режим просмотра: <strong>Только свои результаты</strong>
 				</div>
 			)}
-
+			<h3>ЛБК Ангарский (малый освещенный круг) </h3>
 			{/* Таблица */}
 			<Table
 				columns={columns}
@@ -381,8 +381,6 @@ const Leaderboard = ({ times, user, onTimeUpdated, isMobile = false }) => {
 					</div>
 				)}
 			/>
-
-
 
 			{/* Модальное окно редактирования */}
 			{editingTime && (

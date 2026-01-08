@@ -1,0 +1,1400 @@
+===== src/features/gpx-tools/index.js =====
+export { default as GpxToolsPage } from './ui/GpxToolsPage'
+
+
+
+===== src/features/gpx-tools/ui/GpxComparator.jsx =====
+import React from 'react'
+import { Card, Alert, Typography, Select } from 'antd'
+import { SwapOutlined } from '@ant-design/icons'
+import styles from './GpxComparator.module.css'
+
+const { Title, Text } = Typography
+const { Option } = Select
+
+export default function GpxComparator({ track, tracks, user }) {
+	if (!track) {
+		return null
+	}
+
+	return (
+		<Card className={styles.container}>
+			<div className={styles.header}>
+				<Title level={4} className={styles.title}>
+					<SwapOutlined /> Сравнение треков
+				</Title>
+				<Text type='secondary' className={styles.subtitle}>
+					Сравните два трека как в Garmin Connect
+				</Text>
+			</div>
+
+			<Alert
+				message='Функция в разработке'
+				description='Сравнение двух треков с отображением отставания в метрах и секундах скоро будет доступно.'
+				type='info'
+				showIcon
+				className={styles.alert}
+			/>
+
+			<div className={styles.comparisonSetup}>
+				<div className={styles.trackSelection}>
+					<div className={styles.trackCard}>
+						<Text strong>Трек 1 (основной)</Text>
+						<Text>{track.filename}</Text>
+						<Text type='secondary'>
+							{Math.floor(track.time / 60)}:
+							{(track.time % 60).toString().padStart(2, '0')}
+						</Text>
+					</div>
+
+					<div className={styles.vsLabel}>VS</div>
+
+					<div className={styles.trackCard}>
+						<Text strong>Трек 2 (для сравнения)</Text>
+						<Select
+							placeholder='Выберите трек для сравнения'
+							className={styles.select}
+							size='middle'
+						>
+							{tracks
+								.filter(t => t.id !== track.id)
+								.map(t => (
+									<Option key={t.id} value={t.id}>
+										{t.filename} ({Math.floor(t.time / 60)}:
+										{(t.time % 60).toString().padStart(2, '0')})
+									</Option>
+								))}
+						</Select>
+					</div>
+				</div>
+			</div>
+
+			<div className={styles.statsPreview}>
+				<Text type='secondary'>Будут отображаться:</Text>
+				<ul className={styles.featuresList}>
+					<li>Две движущиеся точки на карте</li>
+					<li>Отставание в метрах и секундах</li>
+					<li>Совмещенные графики скорости/высоты</li>
+					<li>Анализ различий на ключевых участках</li>
+				</ul>
+			</div>
+		</Card>
+	)
+}
+
+
+
+===== src/features/gpx-tools/ui/GpxEditor.jsx =====
+import React, { useState, useEffect, useRef } from 'react'
+import {
+	Card,
+	Alert,
+	Typography,
+	Slider,
+	Button,
+	Space,
+	Row,
+	Col,
+	Statistic,
+	message,
+	Spin,
+} from 'antd'
+import {
+	ScissorOutlined,
+	SaveOutlined,
+	UndoOutlined,
+	PlayCircleOutlined,
+	PauseCircleOutlined,
+	LineChartOutlined,
+} from '@ant-design/icons'
+import TrackVisualizer from './components/TrackVisualizer'
+import styles from './GpxEditor.module.css'
+
+const { Title, Text, Paragraph } = Typography
+
+export default function GpxEditor({ track, onTrackUpdated, user }) {
+	const [loading, setLoading] = useState(true)
+	const [trackData, setTrackData] = useState(null)
+	const [trackPoints, setTrackPoints] = useState([])
+	const [trimStart, setTrimStart] = useState(0)
+	const [trimEnd, setTrimEnd] = useState(0)
+	const [originalStats, setOriginalStats] = useState(null)
+	const [trimmedStats, setTrimmedStats] = useState(null)
+	const [isPlaying, setIsPlaying] = useState(false)
+	const trackRef = useRef(null)
+
+
+
+	// Инициализация при загрузке трека
+	useEffect(() => {
+		if (!track) {
+			setLoading(false)
+			return
+		}
+
+		setLoading(true)
+		setTrimStart(0)
+		setTrimEnd(0)
+		setTrackData(null)
+		setTrackPoints([])
+
+		// Здесь будет загрузка трека через TrackVisualizer
+		setLoading(false)
+	}, [track])
+
+	// Обработчик загрузки трека из TrackVisualizer
+	// В GpxEditor.jsx временно упростим:
+const handleTrackLoaded = (track, stats, points) => {
+	console.log('🎯 Трек загружен, точек:', points.length)
+
+	if (!trackData) {
+		setTrackData(track)
+		setOriginalStats(stats)
+		setTrackPoints(points)
+
+		if (points.length > 0) {
+			setTrimStart(0)
+			setTrimEnd(points.length - 1)
+
+			// Рассчитываем начальную статистику
+			calculateTrimmedStats(points, 0, points.length - 1)
+		}
+	}
+}
+
+	// Расчет статистики обрезанного трека
+const calculateTrimmedStats = (points, start, end) => {
+	if (!points || points.length === 0 || start >= end) {
+		setTrimmedStats(null)
+		return
+	}
+
+	const trimmedPoints = points.slice(start, end + 1)
+	const stats = {
+		points: trimmedPoints.length,
+		percentage: ((trimmedPoints.length / points.length) * 100).toFixed(1),
+		startIndex: start,
+		endIndex: end,
+	}
+
+	setTrimmedStats(stats)
+}
+
+	// Функция расчета расстояния между двумя точками (в метрах)
+	const calculateDistance = (lat1, lon1, lat2, lon2) => {
+		const R = 6371000 // Радиус Земли в метрах
+		const dLat = ((lat2 - lat1) * Math.PI) / 180
+		const dLon = ((lon2 - lon1) * Math.PI) / 180
+		const a =
+			Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+			Math.cos((lat1 * Math.PI) / 180) *
+				Math.cos((lat2 * Math.PI) / 180) *
+				Math.sin(dLon / 2) *
+				Math.sin(dLon / 2)
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+		return R * c
+	}
+
+	// Обработчики слайдеров
+const handleStartChange = value => {
+	if (value >= trimEnd) return
+	setTrimStart(value)
+	calculateTrimmedStats(trackPoints, value, trimEnd)
+}
+
+const handleEndChange = value => {
+	if (value <= trimStart) return
+	setTrimEnd(value)
+	calculateTrimmedStats(trackPoints, trimStart, value)
+}
+
+	// Сброс обрезки
+	const handleReset = () => {
+		if (!trackPoints.length) return
+		setTrimStart(0)
+		setTrimEnd(trackPoints.length - 1)
+		calculateTrimmedStats(trackPoints, 0, trackPoints.length - 1)
+	}
+
+	// Сохранение обрезанного трека
+	const handleSaveTrimmed = async () => {
+		if (!track || !trackPoints.length || !user) {
+			message.warning('Нет данных для сохранения')
+			return
+		}
+
+		try {
+			setLoading(true)
+
+			// TODO: Реализовать сохранение обрезанного GPX файла в Supabase Storage
+			// 1. Создать новый GPX файл с обрезанными точками
+			// 2. Загрузить в Storage
+			// 3. Обновить запись в таблице lap_times
+
+			message.success('Трек успешно обрезан и сохранен!')
+			onTrackUpdated?.()
+		} catch (error) {
+			console.error('Ошибка сохранения:', error)
+			message.error('Ошибка при сохранении трека: ' + error.message)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	// Предпросмотр обрезанного трека
+	const handlePreviewTrimmed = () => {
+		if (!trackPoints.length) return
+		setIsPlaying(!isPlaying)
+		// TODO: Реализовать анимацию проигрывания обрезанного участка
+	}
+
+	if (!track) {
+		return (
+			<Alert
+				message='Трек не выбран'
+				description="Выберите трек из списка 'Мои треки' для редактирования"
+				type='info'
+				showIcon
+				className={styles.alert}
+			/>
+		)
+	}
+
+	return (
+		<Card className={styles.container}>
+			<div className={styles.header}>
+				<Title level={4} className={styles.title}>
+					<ScissorOutlined /> Редактирование трека
+				</Title>
+				<Text type='secondary' className={styles.subtitle}>
+					{track.filename}
+				</Text>
+			</div>
+
+			{loading ? (
+				<div className={styles.loadingContainer}>
+					<Spin size='large' />
+					<div className={styles.loadingText}>Загрузка трека...</div>
+				</div>
+			) : (
+				<Space direction='vertical' size='large' className={styles.content}>
+					{/* Визуализация трека */}
+					<div className={styles.visualizationSection}>
+						<TrackVisualizer
+							gpxUrl={track.url}
+							onTrackLoaded={handleTrackLoaded}
+							startMarker={trimStart}
+							endMarker={trimEnd}
+						/>
+					</div>
+
+					{/* Статистика трека */}
+					{originalStats && (
+						<div className={styles.statsSection}>
+							<Row gutter={[16, 16]}>
+								<Col xs={24} sm={12} md={6}>
+									<Statistic
+										title='Исходных точек'
+										value={originalStats.points}
+										prefix={<LineChartOutlined />}
+										className={styles.statistic}
+									/>
+								</Col>
+								<Col xs={24} sm={12} md={6}>
+									<Statistic
+										title='Дистанция'
+										value={(originalStats.distance / 1000).toFixed(2)}
+										suffix='км'
+										className={styles.statistic}
+									/>
+								</Col>
+								<Col xs={24} sm={12} md={6}>
+									<Statistic
+										title='Длительность'
+										value={
+											originalStats.duration
+												? `${Math.floor(originalStats.duration / 60)}:${(
+														originalStats.duration % 60
+												  )
+														.toString()
+														.padStart(2, '0')}`
+												: '—'
+										}
+										prefix={<PlayCircleOutlined />}
+										className={styles.statistic}
+									/>
+								</Col>
+								<Col xs={24} sm={12} md={6}>
+									<Statistic
+										title='Набор высоты'
+										value={
+											originalStats.elevation
+												? originalStats.elevation.toFixed(0)
+												: '—'
+										}
+										suffix='м'
+										className={styles.statistic}
+									/>
+								</Col>
+							</Row>
+						</div>
+					)}
+
+					{/* Слайдеры для обрезки */}
+					{trackPoints.length > 0 && (
+						<div className={styles.trimSection}>
+							<Title level={5}>🔪 Обрезка трека</Title>
+							<Paragraph type='secondary'>
+								Выберите начальную и конечную точки для обрезки. Обрезанный
+								участок будет использоваться как зачетный круг.
+							</Paragraph>
+
+							<div className={styles.slidersContainer}>
+								<div className={styles.sliderGroup}>
+									<Text strong>Начало обрезки:</Text>
+									<Text type='secondary'>
+										Точка {trimStart + 1} из {trackPoints.length}
+									</Text>
+									<Slider
+										min={0}
+										max={trackPoints.length - 1}
+										value={trimStart}
+										onChange={handleStartChange}
+										tooltip={{ formatter: value => `Точка ${value + 1}` }}
+										className={styles.slider}
+										disabled={trackPoints.length === 0}
+									/>
+								</div>
+
+								<div className={styles.sliderGroup}>
+									<Text strong>Конец обрезки:</Text>
+									<Text type='secondary'>
+										Точка {trimEnd + 1} из {trackPoints.length}
+									</Text>
+									<Slider
+										min={0}
+										max={trackPoints.length - 1}
+										value={trimEnd}
+										onChange={handleEndChange}
+										tooltip={{ formatter: value => `Точка ${value + 1}` }}
+										className={styles.slider}
+										disabled={trackPoints.length === 0}
+									/>
+								</div>
+							</div>
+
+							{/* Статистика обрезанного трека */}
+							{trimmedStats && (
+								<div className={styles.trimmedStats}>
+									<Alert
+										message={`Обрезанный участок: ${trimmedStats.points} точек (${trimmedStats.percentage}% от оригинала)`}
+										description={`Дистанция: ${(
+											trimmedStats.distance / 1000
+										).toFixed(2)} км`}
+										type='success'
+										showIcon
+									/>
+								</div>
+							)}
+
+							{/* Кнопки управления */}
+							<div className={styles.actions}>
+								<Space wrap>
+									<Button
+										icon={<UndoOutlined />}
+										onClick={handleReset}
+										disabled={
+											trimStart === 0 && trimEnd === trackPoints.length - 1
+										}
+									>
+										Сбросить
+									</Button>
+
+									<Button
+										icon={
+											isPlaying ? (
+												<PauseCircleOutlined />
+											) : (
+												<PlayCircleOutlined />
+											)
+										}
+										onClick={handlePreviewTrimmed}
+										type='default'
+									>
+										{isPlaying ? 'Пауза' : 'Предпросмотр'}
+									</Button>
+
+									<Button
+										type='primary'
+										icon={<SaveOutlined />}
+										onClick={handleSaveTrimmed}
+										loading={loading}
+									>
+										Сохранить обрезанный трек
+									</Button>
+								</Space>
+							</div>
+						</div>
+					)}
+
+					{/* Информация о возможностях */}
+					<Alert
+						message='Возможности редактора:'
+						description={
+							<ul className={styles.featuresList}>
+								<li>Визуальная обрезка начала и конца трека</li>
+								<li>Предпросмотр обрезанного участка</li>
+								<li>Сохранение как нового трека</li>
+								<li>Автоматическое обновление времени в таблице лидеров</li>
+							</ul>
+						}
+						type='info'
+						showIcon
+					/>
+				</Space>
+			)}
+		</Card>
+	)
+}
+
+
+
+===== src/features/gpx-tools/ui/GpxList.jsx =====
+import React, { useState } from 'react'
+import {
+	List,
+	Card,
+	Tag,
+	Button,
+	Space,
+	Typography,
+	Alert,
+	Popconfirm,
+	message,
+	Tooltip,
+	Empty,
+} from 'antd'
+import {
+	PlayCircleOutlined,
+	ScissorOutlined,
+	SwapOutlined,
+	SplitCellsOutlined,
+	EyeOutlined,
+	DeleteOutlined,
+	DownloadOutlined,
+	CheckCircleOutlined,
+} from '@ant-design/icons'
+import dayjs from 'dayjs'
+import styles from './GpxList.module.css'
+
+const { Text } = Typography
+
+export default function GpxList({
+	tracks,
+	selectedTrack,
+	onTrackSelect,
+	onTrackDeleted,
+	user,
+}) {
+	const [loadingDelete, setLoadingDelete] = useState(null)
+
+	// Форматирование времени
+	const formatTime = seconds => {
+		const mins = Math.floor(seconds / 60)
+		const secs = seconds % 60
+		return `${mins}:${secs.toString().padStart(2, '0')}`
+	}
+
+	// Форматирование даты
+	const formatDate = dateString => {
+		return dayjs(dateString).format('DD.MM.YYYY HH:mm')
+	}
+
+	// Удаление трека
+	const handleDeleteTrack = async trackId => {
+		setLoadingDelete(trackId)
+		try {
+			// TODO: Удалить из таблицы lap_times
+			// TODO: Удалить файл из Storage
+			message.success('Трек удален')
+			onTrackDeleted?.()
+		} catch (error) {
+			console.error('Ошибка удаления:', error)
+			message.error('Ошибка при удалении трека')
+		} finally {
+			setLoadingDelete(null)
+		}
+	}
+
+	// Действия с треком
+	const handleActionClick = (action, track, e) => {
+		e.stopPropagation()
+
+		switch (action) {
+			case 'select':
+				onTrackSelect(track)
+				break
+			case 'view':
+				window.open(track.url, '_blank')
+				break
+			case 'download':
+				// Скачивание файла
+				const link = document.createElement('a')
+				link.href = track.url
+				link.download = track.filename
+				document.body.appendChild(link)
+				link.click()
+				document.body.removeChild(link)
+				break
+			case 'edit':
+				onTrackSelect(track)
+				break
+			case 'play':
+				onTrackSelect(track)
+				break
+			case 'compare':
+				onTrackSelect(track)
+				break
+			case 'split':
+				onTrackSelect(track)
+				break
+		}
+	}
+
+	if (tracks.length === 0) {
+		return (
+			<Empty
+				image={Empty.PRESENTED_IMAGE_SIMPLE}
+				description={
+					<div className={styles.emptyContainer}>
+						<Text type='secondary'>У вас еще нет загруженных GPX треков</Text>
+						<Text type='secondary' className={styles.emptySubtext}>
+							Загрузите трек через вкладку "Добавить" в таблице заездов
+						</Text>
+					</div>
+				}
+			/>
+		)
+	}
+
+	return (
+		<div className={styles.container}>
+			<Alert
+				message='Информация'
+				description='Выберите трек для работы с инструментами редактирования, проигрывания или сравнения'
+				type='info'
+				showIcon
+				className={styles.infoAlert}
+			/>
+
+			<List
+				dataSource={tracks}
+				renderItem={track => (
+					<List.Item key={track.id}>
+						<Card
+							className={`${styles.trackCard} ${
+								selectedTrack?.id === track.id ? styles.selected : ''
+							}`}
+							onClick={() => onTrackSelect(track)}
+						>
+							<div className={styles.cardContent}>
+								{/* Основная информация */}
+								<div className={styles.mainInfo}>
+									<div className={styles.trackHeader}>
+										<Text strong className={styles.filename}>
+											{track.filename}
+										</Text>
+										{track.verified && (
+											<Tooltip title='Подтвержденный трек'>
+												<Tag
+													icon={<CheckCircleOutlined />}
+													color='success'
+													className={styles.verifiedTag}
+												>
+													Подтверждено
+												</Tag>
+											</Tooltip>
+										)}
+									</div>
+
+									<div className={styles.metadata}>
+										<Space size='large' wrap>
+											<div className={styles.metaItem}>
+												<Text type='secondary'>Дата:</Text>
+												<Text strong className={styles.metaValue}>
+													{formatDate(track.date)}
+												</Text>
+											</div>
+
+											<div className={styles.metaItem}>
+												<Text type='secondary'>Время:</Text>
+												<Tag color='green' className={styles.timeTag}>
+													{formatTime(track.time)}
+												</Tag>
+											</div>
+
+											{track.skiModel && (
+												<div className={styles.metaItem}>
+													<Text type='secondary'>Лыжи:</Text>
+													<Text strong className={styles.metaValue}>
+														{track.skiModel}
+													</Text>
+												</div>
+											)}
+
+											{track.comment && (
+												<div className={styles.metaItem}>
+													<Text type='secondary'>Комментарий:</Text>
+													<Text className={styles.comment}>
+														{track.comment}
+													</Text>
+												</div>
+											)}
+										</Space>
+									</div>
+								</div>
+
+								{/* Действия */}
+								<div className={styles.actions}>
+									<Space wrap>
+										<Tooltip title='Просмотреть в новой вкладке'>
+											<Button
+												icon={<EyeOutlined />}
+												size='small'
+												onClick={e => handleActionClick('view', track, e)}
+											/>
+										</Tooltip>
+
+										<Tooltip title='Скачать GPX файл'>
+											<Button
+												icon={<DownloadOutlined />}
+												size='small'
+												onClick={e => handleActionClick('download', track, e)}
+											/>
+										</Tooltip>
+
+										<Tooltip title='Редактировать трек'>
+											<Button
+												icon={<ScissorOutlined />}
+												size='small'
+												type={
+													selectedTrack?.id === track.id ? 'primary' : 'default'
+												}
+												onClick={e => handleActionClick('edit', track, e)}
+											/>
+										</Tooltip>
+
+										<Tooltip title='Проиграть трек'>
+											<Button
+												icon={<PlayCircleOutlined />}
+												size='small'
+												onClick={e => handleActionClick('play', track, e)}
+											/>
+										</Tooltip>
+
+										<Tooltip title='Сравнить с другим'>
+											<Button
+												icon={<SwapOutlined />}
+												size='small'
+												onClick={e => handleActionClick('compare', track, e)}
+											/>
+										</Tooltip>
+
+										<Tooltip title='Разделить на круги'>
+											<Button
+												icon={<SplitCellsOutlined />}
+												size='small'
+												onClick={e => handleActionClick('split', track, e)}
+											/>
+										</Tooltip>
+
+										<Popconfirm
+											title='Удалить трек?'
+											description='Это действие удалит трек из базы данных и хранилища файлов.'
+											onConfirm={() => handleDeleteTrack(track.id)}
+											okText='Да, удалить'
+											cancelText='Отмена'
+											okType='danger'
+										>
+											<Button
+												icon={<DeleteOutlined />}
+												size='small'
+												danger
+												loading={loadingDelete === track.id}
+											/>
+										</Popconfirm>
+									</Space>
+								</div>
+							</div>
+						</Card>
+					</List.Item>
+				)}
+				className={styles.list}
+			/>
+		</div>
+	)
+}
+
+
+
+===== src/features/gpx-tools/ui/GpxPlayer.jsx =====
+import React from 'react'
+import { Card, Alert, Typography } from 'antd'
+import { PlayCircleOutlined } from '@ant-design/icons'
+import styles from './GpxPlayer.module.css'
+
+const { Title, Text } = Typography
+
+export default function GpxPlayer({ track, user }) {
+	if (!track) {
+		return null
+	}
+
+	return (
+		<Card className={styles.container}>
+			<div className={styles.header}>
+				<Title level={4} className={styles.title}>
+					<PlayCircleOutlined /> Проигрыватель трека
+				</Title>
+				<Text type='secondary' className={styles.subtitle}>
+					{track.filename}
+				</Text>
+			</div>
+
+			<Alert
+				message='Функция в разработке'
+				description='Проигрыватель с паузой, статистикой и визуализацией скоро будет доступен.'
+				type='info'
+				showIcon
+				className={styles.alert}
+			/>
+
+			<div className={styles.stats}>
+				<div className={styles.statItem}>
+					<Text type='secondary'>Длительность:</Text>
+					<Text strong>
+						{Math.floor(track.time / 60)}:
+						{(track.time % 60).toString().padStart(2, '0')}
+					</Text>
+				</div>
+				<div className={styles.statItem}>
+					<Text type='secondary'>Дата заезда:</Text>
+					<Text strong>{new Date(track.date).toLocaleDateString('ru-RU')}</Text>
+				</div>
+				<div className={styles.statItem}>
+					<Text type='secondary'>Модель лыж:</Text>
+					<Text strong>{track.skiModel || 'Не указана'}</Text>
+				</div>
+			</div>
+		</Card>
+	)
+}
+
+
+
+===== src/features/gpx-tools/ui/GpxSplitter.jsx =====
+import React from 'react'
+import { Card, Alert, Typography, Button } from 'antd'
+import { SplitCellsOutlined, RocketOutlined } from '@ant-design/icons'
+import styles from './GpxSplitter.module.css'
+
+const { Title, Text } = Typography
+
+export default function GpxSplitter({ track, onTrackUpdated, user }) {
+	if (!track) {
+		return null
+	}
+
+	return (
+		<Card className={styles.container}>
+			<div className={styles.header}>
+				<Title level={4} className={styles.title}>
+					<SplitCellsOutlined /> Разделение на круги
+				</Title>
+				<Text type='secondary' className={styles.subtitle}>
+					Автоматическое определение кругов по эталонному треку
+				</Text>
+			</div>
+
+			<Alert
+				message='Функция в разработке'
+				description='Автоматическое разделение трека на круги скоро будет доступно.'
+				type='info'
+				showIcon
+				className={styles.alert}
+			/>
+
+			<div className={styles.workflow}>
+				<div className={styles.step}>
+					<div className={styles.stepNumber}>1</div>
+					<div className={styles.stepContent}>
+						<Text strong>Загрузите эталонный трек</Text>
+						<Text type='secondary'>GPX файл с одним идеальным кругом</Text>
+					</div>
+				</div>
+
+				<div className={styles.arrow}>→</div>
+
+				<div className={styles.step}>
+					<div className={styles.stepNumber}>2</div>
+					<div className={styles.stepContent}>
+						<Text strong>Анализ трека</Text>
+						<Text type='secondary'>
+							Автоматическое определение начала/конца кругов
+						</Text>
+					</div>
+				</div>
+
+				<div className={styles.arrow}>→</div>
+
+				<div className={styles.step}>
+					<div className={styles.stepNumber}>3</div>
+					<div className={styles.stepContent}>
+						<Text strong>Выбор зачетного круга</Text>
+						<Text type='secondary'>Просмотр всех кругов и выбор лучшего</Text>
+					</div>
+				</div>
+			</div>
+
+			<div className={styles.actions}>
+				<Button type='primary' icon={<RocketOutlined />} size='large' disabled>
+					Запустить автоматическое разделение
+				</Button>
+				<Text type='secondary' className={styles.hint}>
+					Для выбранного трека: {track.filename}
+				</Text>
+			</div>
+		</Card>
+	)
+}
+
+
+
+===== src/features/gpx-tools/ui/GpxToolsPage.jsx =====
+import React, { useState, useEffect } from 'react'
+import { Card, Tabs, Spin, Alert, Typography, Space } from 'antd'
+import {
+	FileOutlined,
+	ScissorOutlined,
+	PlayCircleOutlined,
+	SwapOutlined,
+	SplitCellsOutlined,
+} from '@ant-design/icons'
+import { supabase } from '../../../shared/api/supabase'
+import GpxList from './GpxList'
+import GpxEditor from './GpxEditor'
+import GpxPlayer from './GpxPlayer'
+import GpxComparator from './GpxComparator'
+import GpxSplitter from './GpxSplitter'
+import styles from './GpxToolsPage.module.css'
+
+const { TabPane } = Tabs
+const { Title, Text } = Typography
+
+export default function GpxToolsPage({ user }) {
+	const [loading, setLoading] = useState(true)
+	const [tracks, setTracks] = useState([])
+	const [selectedTrack, setSelectedTrack] = useState(null)
+	const [activeTab, setActiveTab] = useState('list')
+
+	useEffect(() => {
+		loadUserTracks()
+	}, [user])
+
+	async function loadUserTracks() {
+		if (!user) {
+			setLoading(false)
+			return
+		}
+
+		try {
+			setLoading(true)
+
+			const { data: lapTimes, error } = await supabase
+				.from('lap_times')
+				.select('id, time_seconds, gpx_track_url, date, ski_model, comment')
+				.eq('user_id', user.id)
+				.not('gpx_track_url', 'is', null)
+				.order('date', { ascending: false })
+
+			if (error) throw error
+
+			const formattedTracks = lapTimes.map(lap => ({
+				id: lap.id,
+				url: lap.gpx_track_url,
+				time: lap.time_seconds,
+				date: lap.date,
+				skiModel: lap.ski_model,
+				comment: lap.comment,
+				filename: lap.gpx_track_url?.split('/').pop() || 'track.gpx',
+			}))
+
+			setTracks(formattedTracks)
+		} catch (error) {
+			console.error('Ошибка загрузки треков:', error)
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	const handleTrackSelect = track => {
+		setSelectedTrack(track)
+	}
+
+	const handleTabChange = key => {
+		setActiveTab(key)
+	}
+
+	if (loading) {
+		return (
+			<div className={styles.loadingContainer}>
+				<Spin size='large' />
+				<div className={styles.loadingText}>Загрузка треков...</div>
+			</div>
+		)
+	}
+
+	if (!user) {
+		return (
+			<Alert
+				message='Требуется авторизация'
+				description='Для работы с GPX треками необходимо войти в систему.'
+				type='warning'
+				showIcon
+				className={styles.authAlert}
+			/>
+		)
+	}
+
+	return (
+		<Card className={styles.container}>
+			<Space direction='vertical' size='large' className={styles.content}>
+				<div className={styles.header}>
+					<Title level={3} className={styles.title}>
+						🎯 Инструменты для GPX треков
+					</Title>
+					<Text type='secondary' className={styles.subtitle}>
+						Работайте с вашими лыжными треками: редактируйте, анализируйте,
+						сравнивайте
+					</Text>
+				</div>
+
+				<Tabs
+					activeKey={activeTab}
+					onChange={handleTabChange}
+					type='card'
+					size='large'
+					className={styles.tabs}
+				>
+					<TabPane
+						tab={
+							<span className={styles.tabLabel}>
+								<FileOutlined /> Мои треки
+							</span>
+						}
+						key='list'
+					>
+						<GpxList
+							tracks={tracks}
+							selectedTrack={selectedTrack}
+							onTrackSelect={handleTrackSelect}
+							onTrackDeleted={loadUserTracks}
+							user={user}
+						/>
+					</TabPane>
+
+					<TabPane
+						tab={
+							<span className={styles.tabLabel}>
+								<ScissorOutlined /> Редактировать
+							</span>
+						}
+						key='edit'
+						disabled={!selectedTrack}
+					>
+						<GpxEditor
+							track={selectedTrack}
+							onTrackUpdated={loadUserTracks}
+							user={user}
+						/>
+					</TabPane>
+
+					<TabPane
+						tab={
+							<span className={styles.tabLabel}>
+								<PlayCircleOutlined /> Проигрыватель
+							</span>
+						}
+						key='play'
+						disabled={!selectedTrack}
+					>
+						<GpxPlayer track={selectedTrack} user={user} />
+					</TabPane>
+
+					<TabPane
+						tab={
+							<span className={styles.tabLabel}>
+								<SwapOutlined /> Сравнить
+							</span>
+						}
+						key='compare'
+						disabled={!selectedTrack}
+					>
+						<GpxComparator track={selectedTrack} tracks={tracks} user={user} />
+					</TabPane>
+
+					<TabPane
+						tab={
+							<span className={styles.tabLabel}>
+								<SplitCellsOutlined /> Разделить на круги
+							</span>
+						}
+						key='split'
+						disabled={!selectedTrack}
+					>
+						<GpxSplitter
+							track={selectedTrack}
+							onTrackUpdated={loadUserTracks}
+							user={user}
+						/>
+					</TabPane>
+				</Tabs>
+
+				{!selectedTrack && activeTab !== 'list' && (
+					<Alert
+						message='Выберите трек'
+						description="Для использования инструментов выберите трек из списка 'Мои треки'"
+						type='info'
+						showIcon
+						className={styles.selectAlert}
+					/>
+				)}
+			</Space>
+		</Card>
+	)
+}
+
+
+
+===== src/features/gpx-tools/ui/components/TrackVisualizer.jsx =====
+import React, { useEffect, useRef, useState } from 'react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import 'leaflet-gpx'
+import styles from './TrackVisualizer.module.css'
+
+const TrackVisualizer = ({ gpxUrl, onTrackLoaded, startMarker, endMarker }) => {
+	const mapContainerRef = useRef(null)
+	const mapInstanceRef = useRef(null)
+	const gpxLayerRef = useRef(null)
+	const [loading, setLoading] = useState(true)
+	const [trackStats, setTrackStats] = useState(null)
+	const [mapReady, setMapReady] = useState(false)
+
+	// Инициализация карты - ОДИН РАЗ
+	useEffect(() => {
+		if (!mapContainerRef.current || mapInstanceRef.current) return
+
+		console.log('🗺️ Инициализирую карту...')
+
+		const mapInstance = L.map(mapContainerRef.current).setView(
+			[52.416925, 103.738906],
+			15
+		)
+
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '© OpenStreetMap',
+			maxZoom: 19,
+		}).addTo(mapInstance)
+
+		mapInstanceRef.current = mapInstance
+
+		// Даем карте время отрендериться
+		setTimeout(() => {
+			setMapReady(true)
+			console.log('✅ Карта готова')
+		}, 300)
+
+		return () => {
+			console.log('🗑️ Удаляю карту')
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove()
+				mapInstanceRef.current = null
+				setMapReady(false)
+			}
+		}
+	}, []) // Пустой массив зависимостей - инициализируем ОДИН РАЗ
+
+	// Загрузка GPX когда карта готова
+	useEffect(() => {
+		if (!mapReady || !mapInstanceRef.current || !gpxUrl) {
+			console.log('⏳ Ожидаю:', { mapReady, gpxUrl: !!gpxUrl })
+			return
+		}
+
+		console.log('🚀 Загружаю GPX')
+
+		const loadGpx = () => {
+			try {
+				setLoading(true)
+
+				// Очистка старого слоя
+				if (gpxLayerRef.current) {
+					mapInstanceRef.current.removeLayer(gpxLayerRef.current)
+				}
+
+				// Создание GPX слоя
+				gpxLayerRef.current = new L.GPX(gpxUrl, {
+					async: true,
+					polyline_options: {
+						color: '#1890ff',
+						weight: 4,
+						opacity: 0.8,
+						lineCap: 'round',
+					},
+					marker_options: null,
+				})
+
+				// Обработка загрузки
+				gpxLayerRef.current.on('loaded', e => {
+					console.log('✅ GPX загружен успешно')
+					const track = e.target
+
+					// Пытаемся получить точки трека
+					let points = []
+					try {
+						// Способ 1: через внутреннюю структуру leaflet
+						if (track._layers) {
+							Object.values(track._layers).forEach(layer => {
+								if (
+									layer.getLatLngs &&
+									typeof layer.getLatLngs === 'function'
+								) {
+									const latLngs = layer.getLatLngs()
+									if (Array.isArray(latLngs) && latLngs.length > 0) {
+										// Если это плоский массив точек
+										if (latLngs[0].lat !== undefined) {
+											points = latLngs.map((ll, index) => ({
+												lat: ll.lat,
+												lng: ll.lng,
+												index: index,
+											}))
+										}
+										  console.log('🔍 Структура track:', {
+    keys: Object.keys(track),
+    layers: track._layers ? Object.keys(track._layers) : 'нет слоев',
+    hasGetLatLngs: !!track.getLatLngs,
+    has_distance: !!track.get_distance,
+    has_name: !!track.get_name,
+    bounds: track.getBounds ? track.getBounds() : 'нет bounds',
+    gpxData: track._gpx ? 'есть XML данные' : 'нет XML',
+  });
+    if (track._layers) {
+			const firstLayerKey = Object.keys(track._layers)[0]
+			const firstLayer = track._layers[firstLayerKey]
+			console.log('🔍 Первый слой:', {
+				type: firstLayer?.constructor?.name,
+				hasGetLatLngs: !!firstLayer?.getLatLngs,
+				latLngs: firstLayer?.getLatLngs ? firstLayer.getLatLngs() : 'нет точек',
+			})
+		}
+		// Если это массив массивов (мультиполилиния)
+		else if (Array.isArray(latLngs[0])) {
+			latLngs.forEach(segment => {
+				if (Array.isArray(segment)) {
+					segment.forEach((ll, index) => {
+						if (ll && ll.lat) {
+							points.push({
+								lat: ll.lat,
+								lng: ll.lng,
+								index: points.length,
+							})
+						}
+					})
+				}
+			})
+		}
+									}
+								}
+							})
+						}
+
+						// Способ 2: если не нашли точек, создаем упрощенные
+						if (points.length === 0 && track.getBounds) {
+							const bounds = track.getBounds()
+							const center = bounds.getCenter()
+							points = [
+								{
+									lat: center.lat,
+									lng: center.lng,
+									index: 0,
+								},
+							]
+						}
+					} catch (error) {
+						console.warn('Не удалось получить точки трека:', error)
+						points = []
+					}
+
+					const stats = {
+						distance: track.get_distance ? track.get_distance() : 0,
+						name: 'Трек',
+						pointsCount: points.length,
+					}
+
+					setTrackStats(stats)
+					setLoading(false)
+
+					// Центрируем карту
+					if (track.getBounds) {
+						mapInstanceRef.current.fitBounds(track.getBounds().pad(0.1))
+					}
+
+					// Передаем данные РАЗОВО с проверкой
+					if (onTrackLoaded) {
+						console.log('📤 Отправляю данные в редактор, точек:', points.length)
+						onTrackLoaded(track, stats, points)
+					}
+				})
+
+				gpxLayerRef.current.on('error', err => {
+					console.error('❌ Ошибка GPX:', err)
+					setLoading(false)
+				})
+
+				gpxLayerRef.current.addTo(mapInstanceRef.current)
+			} catch (error) {
+				console.error('❌ Ошибка загрузки:', error)
+				setLoading(false)
+			}
+		}
+
+		loadGpx()
+
+		return () => {
+			if (gpxLayerRef.current && mapInstanceRef.current) {
+				mapInstanceRef.current.removeLayer(gpxLayerRef.current)
+				gpxLayerRef.current = null
+			}
+		}
+	}, [gpxUrl, mapReady]) // Зависимости: gpxUrl и mapReady
+
+	useEffect(() => {
+		if (
+			!mapReady ||
+			!mapInstanceRef.current ||
+			startMarker === undefined ||
+			endMarker === undefined
+		) {
+			return
+		}
+
+		console.log('📍 Обновляю маркеры обрезки:', { startMarker, endMarker })
+
+		// Убираем старые маркеры
+		if (window.startTrimMarker) {
+			mapInstanceRef.current.removeLayer(window.startTrimMarker)
+			window.startTrimMarker = null
+		}
+		if (window.endTrimMarker) {
+			mapInstanceRef.current.removeLayer(window.endTrimMarker)
+			window.endTrimMarker = null
+		}
+
+		// Создаем простые маркеры по координатам
+		// Пока используем центр карты, потом заменим на реальные точки
+		const mapCenter = mapInstanceRef.current.getCenter()
+
+		// Маркер начала обрезки
+		window.startTrimMarker = L.marker(
+			[mapCenter.lat - 0.0005, mapCenter.lng - 0.0005], // Немного смещаем от центра
+			{
+				icon: L.divIcon({
+					className: styles.trimMarker,
+					html: '<div style="background: #52c41a; color: white; padding: 6px 12px; border-radius: 16px; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">🔪 НАЧАЛО</div>',
+					iconSize: [80, 24],
+					iconAnchor: [40, 12],
+				}),
+			}
+		)
+			.addTo(mapInstanceRef.current)
+			.bindPopup(`Начало обрезки<br>Точка ${startMarker}`)
+
+		// Маркер конца обрезки
+		window.endTrimMarker = L.marker(
+			[mapCenter.lat + 0.0005, mapCenter.lng + 0.0005], // Немного смещаем от центра
+			{
+				icon: L.divIcon({
+					className: styles.trimMarker,
+					html: '<div style="background: #f5222d; color: white; padding: 6px 12px; border-radius: 16px; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">🔪 КОНЕЦ</div>',
+					iconSize: [70, 24],
+					iconAnchor: [35, 12],
+				}),
+			}
+		)
+			.addTo(mapInstanceRef.current)
+			.bindPopup(`Конец обрезки<br>Точка ${endMarker}`)
+
+		// Очистка при размонтировании
+		return () => {
+			if (window.startTrimMarker && mapInstanceRef.current) {
+				mapInstanceRef.current.removeLayer(window.startTrimMarker)
+				window.startTrimMarker = null
+			}
+			if (window.endTrimMarker && mapInstanceRef.current) {
+				mapInstanceRef.current.removeLayer(window.endTrimMarker)
+				window.endTrimMarker = null
+			}
+		}
+	}, [startMarker, endMarker, mapReady])
+
+	return (
+		<div className={styles.container}>
+			<div
+				ref={mapContainerRef}
+				className={styles.mapContainer}
+				style={{
+					width: '100%',
+					height: '400px',
+					minHeight: '400px',
+					borderRadius: '8px',
+					overflow: 'hidden',
+					border: '1px solid #f0f0f0',
+					position: 'relative',
+				}}
+			/>
+
+			{loading && (
+				<div className={styles.loadingOverlay}>
+					<div className={styles.spinner} />
+					<div>Загрузка трека...</div>
+				</div>
+			)}
+
+			{!mapReady && !loading && (
+				<div className={styles.loadingOverlay}>
+					<div>Инициализация карты...</div>
+				</div>
+			)}
+
+			{trackStats && (
+				<div className={styles.statsPanel}>
+					<h4>Статистика трека:</h4>
+					<div className={styles.statsGrid}>
+						<div className={styles.statItem}>
+							<span className={styles.statLabel}>Дистанция:</span>
+							<span className={styles.statValue}>
+								{(trackStats.distance / 1000).toFixed(2)} км
+							</span>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	)
+}
+
+export default TrackVisualizer
+
+
+

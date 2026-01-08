@@ -1,31 +1,90 @@
 .container {
-  width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
 
-.header {
-  margin-bottom: 20px;
+.mapSection {
+	min-height: 400px;
+	width: 100%;
 }
 
-.title {
-  color: #1890ff;
-  margin-bottom: 4px !important;
+.rangeSliderSection {
+	padding: 12px;
+	background: #fafafa;
+	border-radius: 6px;
+	border: 1px solid #f0f0f0;
+	width: 100%;
 }
 
-.subtitle {
-  font-size: 14px;
-  color: #666;
+.rangeSlider {
+	margin: 0 8px;
+	width: calc(100% - 16px);
+}
+
+/* Ползунки цветные */
+.rangeSlider :global(.ant-slider-track) {
+	background-color: #52c41a !important;
+}
+
+.rangeSlider :global(.ant-slider-handle-1) {
+	border-color: #52c41a !important;
+	background-color: #52c41a !important;
+}
+
+.rangeSlider :global(.ant-slider-handle-2) {
+	border-color: #f5222d !important;
+	background-color: #f5222d !important;
+}
+
+.playerSection {
+	margin-top: 8px;
+	width: 100%;
+}
+
+.fullWidthPlayer {
+	width: 100% !important;
+}
+
+.statsCard {
+	margin-top: 8px;
+	width: 100%;
+}
+
+.compactStat :global(.ant-statistic-title) {
+	font-size: 12px;
+	margin-bottom: 0;
+}
+
+.compactStat :global(.ant-statistic-content) {
+	font-size: 14px;
+}
+
+/* Растягиваем статистику на всю ширину */
+.statsRow {
+	width: 100%;
+}
+
+.statsRow :global(.ant-col) {
+	flex: 1;
+	min-width: 0;
+}
+
+.loadingContainer {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	width: 100%;
+}
+
+.loadingText {
+	margin-top: 12px;
+	color: #888;
 }
 
 .alert {
-  margin-bottom: 20px;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 6px;
-  border: 1px solid #f0f0f0;
+	margin: 20px;
+	width: 100%;
 }

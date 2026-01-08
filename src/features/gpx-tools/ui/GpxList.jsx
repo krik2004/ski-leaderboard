@@ -21,9 +21,13 @@ import {
 	DeleteOutlined,
 	DownloadOutlined,
 	CheckCircleOutlined,
+	EditOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import styles from './GpxList.module.css'
+import supabase from '../../../supabase' // ← ПУТЬ МОЖЕТ БЫТЬ ДРУГИМ! Проверьте путь
+
+
 
 const { Text } = Typography
 
@@ -35,6 +39,87 @@ export default function GpxList({
 	user,
 }) {
 	const [loadingDelete, setLoadingDelete] = useState(null)
+	const [editingTrackId, setEditingTrackId] = useState(null) // ← ДОБАВИТЬ
+	const [editName, setEditName] = useState('') // ← ДОБАВИТЬ
+
+	// Функция для начала редактирования
+	const startEditing = (track, e) => {
+		e?.stopPropagation()
+		setEditingTrackId(track.id)
+		setEditName(track.filename || '')
+	}
+
+	// Функция для сохранения нового имени
+	// Функция для сохранения нового имени
+	const saveEditName = async track => {
+		if (!editName.trim()) {
+			message.warning('Введите название трека')
+			return
+		}
+
+		try {
+			// 1. Получаем текущий URL файла из track
+			const currentUrl = track.url
+
+			// 2. Извлекаем путь к файлу из URL
+			const urlParts = currentUrl.split('/')
+			const oldFilePath = urlParts[urlParts.length - 1]
+
+			// 3. Создаем новое имя файла с .gpx
+			const newFileName = editName.endsWith('.gpx')
+				? editName
+				: `${editName}.gpx`
+			const newFilePath = oldFilePath.replace(/[^_]*$/, newFileName)
+
+			console.log('Переименование:', {
+				old: oldFilePath,
+				new: newFilePath,
+				trackId: track.id,
+			})
+
+			// 4. Копируем файл с новым именем в Storage
+			const { data: copyData, error: copyError } = await supabase.storage
+				.from('gpx-tracks')
+				.copy(oldFilePath, newFilePath)
+
+			if (copyError) throw copyError
+
+			// 5. Получаем новый публичный URL
+			const { data: urlData } = supabase.storage
+				.from('gpx-tracks')
+				.getPublicUrl(newFilePath)
+
+			// 6. Обновляем запись в таблице lap_times
+			const { error: updateError } = await supabase
+				.from('lap_times')
+				.update({
+					comment: `Переименован: ${newFileName}`, // Используем comment для хранения инфо
+					gpx_track_url: urlData.publicUrl,
+					updated_at: new Date().toISOString(),
+				})
+				.eq('id', track.id)
+
+			if (updateError) throw updateError
+
+			// 7. Удаляем старый файл (опционально)
+			// const { error: deleteError } = await supabase.storage
+			//   .from('gpx-tracks')
+			//   .remove([oldFilePath]);
+			// if (deleteError) console.warn('Не удалось удалить старый файл:', deleteError);
+
+			message.success('Название обновлено')
+			setEditingTrackId(null)
+			onTrackDeleted?.() // Обновляем список
+		} catch (error) {
+			console.error('Ошибка обновления:', error)
+			message.error(`Ошибка при обновлении названия: ${error.message}`)
+		}
+	}
+	// Функция для отмены редактирования
+	const cancelEditing = () => {
+		setEditingTrackId(null)
+		setEditName('')
+	}
 
 	// Форматирование времени
 	const formatTime = seconds => {
@@ -117,14 +202,6 @@ export default function GpxList({
 
 	return (
 		<div className={styles.container}>
-			<Alert
-				message='Информация'
-				description='Выберите трек для работы с инструментами редактирования, проигрывания или сравнения'
-				type='info'
-				showIcon
-				className={styles.infoAlert}
-			/>
-
 			<List
 				dataSource={tracks}
 				renderItem={track => (
@@ -139,9 +216,46 @@ export default function GpxList({
 								{/* Основная информация */}
 								<div className={styles.mainInfo}>
 									<div className={styles.trackHeader}>
-										<Text strong className={styles.filename}>
-											{track.filename}
-										</Text>
+										{editingTrackId === track.id ? (
+											// Режим редактирования
+											<div className={styles.editContainer}>
+												<input
+													type='text'
+													value={editName}
+													onChange={e => setEditName(e.target.value)}
+													onKeyDown={e => {
+														if (e.key === 'Enter') saveEditName(track)
+														if (e.key === 'Escape') cancelEditing()
+													}}
+													className={styles.nameInput}
+													autoFocus
+												/>
+												<Space className={styles.editButtons}>
+													<Button
+														size='small'
+														type='text'
+														onClick={() => saveEditName(track)}
+														className={styles.editButton}
+														icon={<CheckCircleOutlined />}
+													/>
+													<Button
+														size='small'
+														type='text'
+														onClick={cancelEditing}
+														className={styles.editButton}
+														icon={<DeleteOutlined />}
+													/>
+												</Space>
+											</div>
+										) : (
+											// Обычный режим просмотра
+											<>
+												<Text strong className={styles.filename}>
+													{track.filename}
+												</Text>
+											</>
+										)}
+
 										{track.verified && (
 											<Tooltip title='Подтвержденный трек'>
 												<Tag
@@ -195,11 +309,11 @@ export default function GpxList({
 								{/* Действия */}
 								<div className={styles.actions}>
 									<Space wrap>
-										<Tooltip title='Просмотреть в новой вкладке'>
+										<Tooltip title='Редактировать название'>
 											<Button
-												icon={<EyeOutlined />}
 												size='small'
-												onClick={e => handleActionClick('view', track, e)}
+												onClick={e => startEditing(track, e)}
+												icon={<EditOutlined />}
 											/>
 										</Tooltip>
 
@@ -219,14 +333,6 @@ export default function GpxList({
 													selectedTrack?.id === track.id ? 'primary' : 'default'
 												}
 												onClick={e => handleActionClick('edit', track, e)}
-											/>
-										</Tooltip>
-
-										<Tooltip title='Проиграть трек'>
-											<Button
-												icon={<PlayCircleOutlined />}
-												size='small'
-												onClick={e => handleActionClick('play', track, e)}
 											/>
 										</Tooltip>
 

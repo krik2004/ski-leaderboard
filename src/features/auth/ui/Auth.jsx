@@ -100,7 +100,7 @@ export default function Auth({ onLoginSuccess }) {
 				<div className={styles.authHeader}>
 					<TrophyOutlined className={styles.authIcon} />
 					<Title level={2} className={styles.authTitle}>
-						🎿 Лыжный Рейтинг
+						🎿 ProTreki
 					</Title>
 					<Text className={styles.authSubtitle}>
 						{isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}

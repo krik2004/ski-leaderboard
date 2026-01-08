@@ -1,84 +1,140 @@
 .container {
-  width: 100%;
+	margin: 16px 0;
 }
 
 .header {
-  margin-bottom: 20px;
+	margin-bottom: 20px;
+	text-align: center;
 }
 
 .title {
-  color: #722ed1;
-  margin-bottom: 4px !important;
+	margin-bottom: 4px !important;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: #666;
-}
-
-.alert {
-  margin-bottom: 20px;
+	font-size: 12px;
+	opacity: 0.7;
 }
 
 .comparisonSetup {
-  margin-bottom: 24px;
+	margin-bottom: 24px;
 }
 
 .trackSelection {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-@media (max-width: 768px) {
-  .trackSelection {
-    flex-direction: column;
-    gap: 16px;
-  }
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	margin-bottom: 16px;
 }
 
 .trackCard {
-  flex: 1;
-  min-width: 250px;
-  padding: 16px;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  background: #fafafa;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+	flex: 1;
+	padding: 16px;
+	border: 1px solid #f0f0f0;
+	border-radius: 8px;
+	background: #fafafa;
+}
+
+.trackName {
+	display: block;
+	font-size: 14px;
+	margin-top: 4px;
+	word-break: break-word;
+}
+
+.trackTime {
+	display: block;
+	font-size: 12px;
+	margin-top: 2px;
 }
 
 .vsLabel {
-  font-size: 20px;
-  font-weight: bold;
-  color: #1890ff;
-  padding: 8px 16px;
-  background: #e6f7ff;
-  border-radius: 50%;
+	padding: 8px 16px;
+	background: #1890ff;
+	color: white;
+	border-radius: 20px;
+	font-weight: bold;
+	font-size: 14px;
 }
 
 .select {
-  width: 100%;
-  margin-top: 8px;
+	width: 100%;
+	margin-top: 8px;
 }
 
-.statsPreview {
-  padding: 16px;
-  background: #f9f0ff;
-  border: 1px solid #d3adf7;
-  border-radius: 6px;
+.selectedTrackInfo {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid #f0f0f0;
 }
 
-.featuresList {
-  margin: 12px 0 0 20px;
-  padding: 0;
-  color: #666;
+.controls {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-top: 16px;
+	padding: 12px;
+	background: #f6ffed;
+	border: 1px solid #b7eb8f;
+	border-radius: 6px;
 }
 
-.featuresList li {
-  margin-bottom: 6px;
-  line-height: 1.5;
+.controlHint {
+	font-size: 12px;
+	flex: 1;
+}
+
+.loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	gap: 16px;
+}
+
+.statsGrid {
+	margin-top: 16px;
+}
+
+.tabs {
+	margin-top: 16px;
+}
+
+.segmentsList {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.segmentCard {
+	border-left: 4px solid #1890ff;
+}
+
+.segmentRange {
+	display: block;
+	font-size: 11px;
+	margin-top: 2px;
+}
+
+.mapSection {
+	margin: 16px 0;
+	height: 500px;
+}
+
+.controls {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin: 16px 0;
+	padding: 12px;
+	background: #f6ffed;
+	border: 1px solid #b7eb8f;
+	border-radius: 6px;
+}
+
+.controlHint {
+	font-size: 12px;
+	flex: 1;
 }

@@ -10,7 +10,6 @@ import {
 import { supabase } from '../../../shared/api/supabase'
 import GpxList from './GpxList'
 import GpxEditor from './GpxEditor'
-import GpxPlayer from './GpxPlayer'
 import GpxComparator from './GpxComparator'
 import GpxSplitter from './GpxSplitter'
 import styles from './GpxToolsPage.module.css'
@@ -95,22 +94,13 @@ export default function GpxToolsPage({ user }) {
 
 	return (
 		<Card className={styles.container}>
-			<Space direction='vertical' size='large' className={styles.content}>
-				<div className={styles.header}>
-					<Title level={3} className={styles.title}>
-						🎯 Инструменты для GPX треков
-					</Title>
-					<Text type='secondary' className={styles.subtitle}>
-						Работайте с вашими лыжными треками: редактируйте, анализируйте,
-						сравнивайте
-					</Text>
-				</div>
-
+			{console.log('🔍 GpxToolsPage перерендерился, user:', user?.id)}
+			<Space direction='vertical' size='small' className={styles.content}>
 				<Tabs
 					activeKey={activeTab}
 					onChange={handleTabChange}
 					type='card'
-					size='large'
+					size='small'
 					className={styles.tabs}
 				>
 					<TabPane
@@ -144,18 +134,6 @@ export default function GpxToolsPage({ user }) {
 							onTrackUpdated={loadUserTracks}
 							user={user}
 						/>
-					</TabPane>
-
-					<TabPane
-						tab={
-							<span className={styles.tabLabel}>
-								<PlayCircleOutlined /> Проигрыватель
-							</span>
-						}
-						key='play'
-						disabled={!selectedTrack}
-					>
-						<GpxPlayer track={selectedTrack} user={user} />
 					</TabPane>
 
 					<TabPane

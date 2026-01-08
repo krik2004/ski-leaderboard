@@ -145,3 +145,65 @@
     max-width: 200px;
   }
 }
+
+/* Стили для редактирования названия трека */
+
+/* Контейнер для редактирования */
+.editContainer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1;
+	margin-right: 8px;
+}
+
+/* Поле ввода названия */
+.nameInput {
+	flex: 1;
+	padding: 4px 8px;
+	border: 1px solid #d9d9d9;
+	border-radius: 4px;
+	font-size: 14px;
+	font-family: inherit;
+	outline: none;
+	transition: all 0.2s;
+	min-width: 200px;
+}
+
+.nameInput:focus {
+	border-color: #1890ff;
+	box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+/* Кнопки редактирования */
+.editButtons {
+	flex-shrink: 0;
+}
+
+.editButton {
+	padding: 0;
+	min-width: 24px;
+	height: 24px;
+}
+
+.editButton:first-child {
+	color: #52c41a;
+}
+
+.editButton:last-child {
+	color: #ff4d4f;
+}
+
+
+.trackHeader {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8px;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.filename {
+	font-size: 16px;
+	margin-right: 4px;
+}

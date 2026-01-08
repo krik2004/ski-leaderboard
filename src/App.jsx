@@ -10,6 +10,7 @@ import {
 	FileOutlined,
 } from '@ant-design/icons'
 import { supabase } from './shared/api/supabase'
+import { TbBeta } from 'react-icons/tb'
 
 // Новые импорты из FSD структуры
 import { Auth } from './features/auth'
@@ -19,7 +20,6 @@ import Leaderboard from './widgets/Leaderboard/ui/Leaderboard'
 import { About } from './widgets/about'
 import { GpxToolsPage } from './features/gpx-tools'
 import Map from './widgets/Map'
-
 
 import { EnvironmentOutlined } from '@ant-design/icons'
 
@@ -208,14 +208,28 @@ function App() {
 							overflow: 'hidden',
 							textOverflow: 'ellipsis',
 							maxWidth: isMobile ? '200px' : 'none',
+							display: 'flex',
+							alignItems: 'baseline', // ← Это важно!
 						}}
 					>
-						{isMobile
-							? '🎿 Ретинг ЛБК малый круг	'
-							: '🎿 Лыжный Рейтинг (ЛБК, малый круг)'}
+						<span>ProTreki</span>
+						<span
+							style={{
+								fontSize: isMobile ? '10px' : '12px',
+								background: '#1890ff',
+								color: 'white',
+								padding: '2px 6px',
+								borderRadius: '10px',
+								marginLeft: '8px',
+								fontWeight: 'bold',
+								verticalAlign: 'middle',
+								lineHeight: 'normal',
+							}}
+						>
+							Beta
+						</span>
 					</h1>
 				</div>
-
 				<div
 					style={{
 						display: 'flex',
@@ -350,7 +364,6 @@ function App() {
 								},
 							]}
 						/>
-
 					</Card>
 				) : (
 					// Мобильная версия без лишних оберток
@@ -367,7 +380,6 @@ function App() {
 										</span>
 									),
 								},
-
 								{
 									key: 'tracks',
 									label: (
@@ -384,7 +396,30 @@ function App() {
 										</span>
 									),
 								},
-								// ... остальные табы
+								{
+									key: 'add',
+									label: (
+										<span>
+											<PlusOutlined /> Добавить
+										</span>
+									),
+								},
+								{
+									key: 'profile',
+									label: (
+										<span>
+											<UserOutlined /> Профиль
+										</span>
+									),
+								},
+								{
+									key: 'about',
+									label: (
+										<span>
+											<InfoCircleOutlined /> О проекте
+										</span>
+									),
+								},
 							]}
 							style={{
 								marginBottom: '10px',
@@ -398,9 +433,7 @@ function App() {
 									onTimeUpdated={fetchTimes}
 								/>
 							)}
-							{activeTab === 'tracks' && (
-								<GpxToolsPage user={user} />
-							)}
+							{activeTab === 'tracks' && <GpxToolsPage user={user} />}
 							{activeTab === 'map' && <Map user={user} />}
 							{activeTab === 'add' && (
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
@@ -422,7 +455,7 @@ function App() {
 						padding: '15px 20px',
 					}}
 				>
-					Лыжный Рейтинг ©2025
+					ProTreki ©2026
 				</Footer>
 			)}
 		</Layout>
