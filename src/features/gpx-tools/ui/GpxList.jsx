@@ -1,3 +1,10 @@
+// (Список треков)
+// Назначение: Отображение и управление списком GPX треков пользователя
+
+// Функции: Выбор треков, редактирование названий, действия (скачать, удалить, сравнить)
+
+// Интеграция: Supabase Storage + таблица lap_times
+
 import React, { useState } from 'react'
 import {
 	List,
@@ -27,8 +34,6 @@ import dayjs from 'dayjs'
 import styles from './GpxList.module.css'
 import supabase from '../../../supabase' // ← ПУТЬ МОЖЕТ БЫТЬ ДРУГИМ! Проверьте путь
 
-
-
 const { Text } = Typography
 
 export default function GpxList({
@@ -37,6 +42,8 @@ export default function GpxList({
 	onTrackSelect,
 	onTrackDeleted,
 	user,
+	selectedTracks, // ← Добавить
+	onTracksSelect, // ← Добавить
 }) {
 	const [loadingDelete, setLoadingDelete] = useState(null)
 	const [editingTrackId, setEditingTrackId] = useState(null) // ← ДОБАВИТЬ
@@ -47,6 +54,18 @@ export default function GpxList({
 		e?.stopPropagation()
 		setEditingTrackId(track.id)
 		setEditName(track.filename || '')
+	}
+	// Функция для выбора/снятия выбора трека
+	// Обновите существующую функцию toggleTrackSelection
+	const toggleTrackSelection = track => {
+		const newSelectedTracks = selectedTracks.some(t => t.id === track.id)
+			? selectedTracks.filter(t => t.id !== track.id)
+			: selectedTracks.length >= 2
+			? [...selectedTracks.slice(0, 1), track]
+			: [...selectedTracks, track]
+
+		// Передаем выбранные треки в родительский компонент
+		onTracksSelect?.(newSelectedTracks)
 	}
 
 	// Функция для сохранения нового имени
@@ -208,9 +227,11 @@ export default function GpxList({
 					<List.Item key={track.id}>
 						<Card
 							className={`${styles.trackCard} ${
-								selectedTrack?.id === track.id ? styles.selected : ''
+								selectedTracks.some(t => t.id === track.id)
+									? styles.selected
+									: ''
 							}`}
-							onClick={() => onTrackSelect(track)}
+							onClick={() => toggleTrackSelection(track)}
 						>
 							<div className={styles.cardContent}>
 								{/* Основная информация */}

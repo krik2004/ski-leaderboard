@@ -138,3 +138,35 @@
 	font-size: 12px;
 	flex: 1;
 }
+.mapSection {
+  margin-bottom: 16px;
+}
+
+.trackInfoSection {
+  margin-bottom: 16px;
+}
+
+.trackInfoCard {
+  height: 100%;
+}
+
+.trackInfoTitle {
+  display: block;
+  margin-bottom: 8px;
+  color: #1890ff;
+}
+
+.trackName {
+  font-size: 14px;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.trackMeta {
+  font-size: 12px;
+}
+
+.trackMeta > span {
+  display: block;
+  margin-bottom: 2px;
+}

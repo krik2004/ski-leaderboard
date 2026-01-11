@@ -1,3 +1,10 @@
+// (Визуализатор треков)
+// Назначение: Отображение GPX трека на карте Leaflet
+
+// Функции: Загрузка GPX, отрисовка маркеров начала/конца, выделение сегментов
+
+// Особенности: Поддержка штрихпунктирных выделений
+
 import React, { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'

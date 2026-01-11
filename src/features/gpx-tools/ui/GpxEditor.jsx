@@ -1,3 +1,18 @@
+// (Редактор треков)
+// Назначение: Визуальное редактирование GPX треков (обрезание)
+
+// Функции:
+
+// Загрузка трека на карту
+
+// Выбор диапазона обрезки (два ползунка)
+
+// Предпросмотр обрезанного участка
+
+// Сохранение в новый файл или перезапись
+
+// Компоненты: TrackVisualizer, TrackPlayer, SaveTrackModal
+
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
 	Alert,
@@ -18,6 +33,8 @@ import styles from './GpxEditor.module.css'
 import SaveTrackModal from './components/SaveTrackModal'
 import supabase from '../../../supabase'
 import TrackPlayer from './components/TrackPlayer'
+import UnifiedMap from './components/UnifiedMap'
+
 
 const { Text } = Typography
 

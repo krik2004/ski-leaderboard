@@ -1,81 +1,230 @@
+// (Сравнение треков)
+// Назначение: Визуальное сравнение двух GPX треков
+
+// Функции: Отображение двух треков на карте, расчет отставаний, анимация воспроизведения
+
+// Особенности: Двухцветное отображение, статистика сравнения
+
 import React, { useState, useEffect, useRef } from 'react'
+import L from 'leaflet' // ← ДОБАВЬТЕ ИМПОРТ L
+import 'leaflet/dist/leaflet.css' // ← ДОБАВЬТЕ
+import 'leaflet-gpx' // ← ДОБАВЬТЕ
 import {
 	Card,
 	Alert,
 	Typography,
-	Select,
 	Row,
 	Col,
 	Statistic,
 	Button,
-	Space,
 	Tabs,
 	Spin,
 	Empty,
 } from 'antd'
 import {
-	SwapOutlined,
 	PlayCircleOutlined,
 	PauseCircleOutlined,
-	LineChartOutlined,
 	BarChartOutlined,
 	AreaChartOutlined,
+	LineChartOutlined,
 } from '@ant-design/icons'
 import styles from './GpxComparator.module.css'
-import {
-	calculateDistance,
-	calculateSpeed,
-	calculateLag,
-	findKeySegments,
-} from '../utils/gpxCalculations' // ← Импортируем утилиты
+import { calculateLag, findKeySegments } from '../utils/gpxCalculations'
 import useGpxLoader from '../hooks/useGpxLoader'
 
-import ComparisonMap from './components/ComparisonMap'
-
-const { Title, Text } = Typography
-const { Option } = Select
+const { Text } = Typography
 const { TabPane } = Tabs
 
-export default function GpxComparator({ track, tracks, user }) {
-	const [selectedTrack1, setSelectedTrack1] = useState(null)
-	const [selectedTrack2, setSelectedTrack2] = useState(null)
+export default function GpxComparator({ tracks = [], user }) {
+
+	// useRef хуки
+	const playerIntervalRef = useRef(null)
+	const mapRef = useRef(null)
+	const mapInstanceRef = useRef(null)
+	const gpx1Ref = useRef(null)
+	const gpx2Ref = useRef(null)
+
+	// useState хуки
 	const [isPlaying, setIsPlaying] = useState(false)
 	const [currentPointIndex, setCurrentPointIndex] = useState(0)
-	// Используем хук для загрузки точек
-	const {
-		points: track1Points,
-		loading: loading1,
-		error: error1,
-		stats: stats1,
-	} = useGpxLoader(selectedTrack1?.url)
-	const playerIntervalRef = useRef(null)
-
-	const {
-		points: track2Points,
-		loading: loading2,
-		error: error2,
-		stats: stats2,
-	} = useGpxLoader(selectedTrack2?.url)
-
-	const loading = loading1 || loading2
 	const [lags, setLags] = useState([])
 	const [keySegments, setKeySegments] = useState([])
 
-	if (tracks.length === 0) {
+	// Инициализация карты (useEffect должен быть внутри компонента)
+	useEffect(() => {
+		if (!mapRef.current || mapInstanceRef.current) return
+
+		console.log('🗺️ Инициализирую карту в GpxComparator')
+
+		const map = L.map(mapRef.current).setView([52.416925, 103.738906], 15)
+
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '© OpenStreetMap',
+			maxZoom: 19,
+		}).addTo(map)
+
+		mapInstanceRef.current = map
+
+		return () => {
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove()
+				mapInstanceRef.current = null
+			}
+		}
+	}, [])
+
+	// Проверка на 2 трека
+	if (tracks.length !== 2) {
 		return (
 			<Card className={styles.container}>
-				<Empty
-					description='Нет треков для сравнения'
-					image={Empty.PRESENTED_IMAGE_SIMPLE}
+				<Alert
+					message='Необходимо выбрать 2 трека для сравнения'
+					description="Вернитесь на вкладку 'Мои треки' и выберите два трека"
+					type='warning'
+					showIcon
 				/>
 			</Card>
 		)
 	}
-	useEffect(() => {
-		if (tracks.length > 0 && !selectedTrack1) {
-			setSelectedTrack1(tracks[0])
+
+	// Получаем первый и второй треки
+	const track1 = tracks[0]
+	const track2 = tracks[1]
+
+	// === ОТЛАДКА ===
+	console.log('=== GpxComparator Debug ===')
+	console.log('Tracks array:', tracks)
+	console.log('Track 1 object:', track1)
+	console.log('Track 2 object:', track2)
+	console.log('Track 1 filename:', track1?.filename)
+	console.log('Track 2 filename:', track2?.filename)
+	console.log('Track 1 URL from prop:', track1?.url)
+	console.log('Track 2 URL from prop:', track2?.url)
+	// === КОНЕЦ ОТЛАДКИ ===
+
+	// Функция для получения URL трека
+	const getTrackUrl = track => {
+		if (!track || !track.filename) return null
+		return `https://xsqelqxwthjufdwfdecf.supabase.co/storage/v1/object/public/gpx-tracks/${track.filename}`
+	}
+
+	// Используем хук для загрузки точек
+  useEffect(() => {
+		if (tracks.length >= 2) {
+			const loadTracks = async () => {
+				const url1 = getTrackUrl(tracks[0])
+				const url2 = getTrackUrl(tracks[1])
+
+				if (url1) {
+					setLoading1(true)
+					try {
+						// Используем loadGpx напрямую
+						const loader1 = new GpxLoader() // или ваш метод загрузки
+						const result1 = await loader1.load(url1)
+						setTrack1Points(result1.points)
+						setStats1(result1.stats)
+					} catch (err) {
+						setError1(err.message)
+					} finally {
+						setLoading1(false)
+					}
+				}
+
+				if (url2) {
+					setLoading2(true)
+					try {
+						// Аналогично для второго трека
+						const loader2 = new GpxLoader()
+						const result2 = await loader2.load(url2)
+						setTrack2Points(result2.points)
+						setStats2(result2.stats)
+					} catch (err) {
+						setError2(err.message)
+					} finally {
+						setLoading2(false)
+					}
+				}
+			}
+			loadTracks()
 		}
-	}, [tracks, selectedTrack1])
+	}, [tracks])
+
+	const loading = loading1 || loading2
+
+	// 🔥 ИЛИ проще: создайте кастомный хук который безопасно обрабатывает отсутствие URL
+	// Например:
+	const useSafeGpxLoader = url => {
+		const [points, setPoints] = useState([])
+		const [loading, setLoading] = useState(false)
+		const [error, setError] = useState(null)
+		const [stats, setStats] = useState(null)
+
+		useEffect(() => {
+			if (!url) {
+				setPoints([])
+				setStats(null)
+				return
+			}
+
+			// Ваша логика загрузки...
+		}, [url])
+
+		return { points, loading, error, stats }
+	}
+
+
+
+	// Загрузка треков на карту (этот useEffect тоже должен быть внутри компонента)
+	useEffect(() => {
+		if (!mapInstanceRef.current || !track1 || !track2) return
+
+		console.log('📥 Загружаю треки на карту:', track1.url, track2.url)
+
+		// Очистка старых слоев
+		if (gpx1Ref.current) mapInstanceRef.current.removeLayer(gpx1Ref.current)
+		if (gpx2Ref.current) mapInstanceRef.current.removeLayer(gpx2Ref.current)
+
+		// Загрузка трека 1
+		gpx1Ref.current = new L.GPX(track1.url, {
+			async: true,
+			polyline_options: { color: '#1890ff', weight: 3, opacity: 0.8 },
+			marker_options: null,
+		})
+
+		gpx1Ref.current.on('loaded', e => {
+			console.log('✅ Трек 1 загружен')
+		})
+
+		gpx1Ref.current.on('error', e => {
+			console.error('❌ Ошибка трека 1:', e.error)
+		})
+
+		gpx1Ref.current.addTo(mapInstanceRef.current)
+
+		// Загрузка трека 2
+		gpx2Ref.current = new L.GPX(track2.url, {
+			async: true,
+			polyline_options: { color: '#f5222d', weight: 3, opacity: 0.8 },
+			marker_options: null,
+		})
+
+		gpx2Ref.current.on('loaded', e => {
+			console.log('✅ Трек 2 загружен')
+			// Когда оба загружены, центрируем карту
+			if (gpx1Ref.current) {
+				const bounds1 = gpx1Ref.current.getBounds()
+				const bounds2 = e.target.getBounds()
+				const bounds = bounds1.extend(bounds2)
+				mapInstanceRef.current.fitBounds(bounds.pad(0.1))
+			}
+		})
+
+		gpx2Ref.current.on('error', e => {
+			console.error('❌ Ошибка трека 2:', e.error)
+		})
+
+		gpx2Ref.current.addTo(mapInstanceRef.current)
+	}, [track1, track2])
 
 	// Расчет отставания при изменении треков
 	useEffect(() => {
@@ -120,6 +269,15 @@ export default function GpxComparator({ track, tracks, user }) {
 		}
 	}
 
+	// Очистка интервала при размонтировании
+	useEffect(() => {
+		return () => {
+			if (playerIntervalRef.current) {
+				clearInterval(playerIntervalRef.current)
+			}
+		}
+	}, [])
+
 	// Получение статистики для отображения
 	const getComparisonStats = () => {
 		if (lags.length === 0) return null
@@ -140,254 +298,69 @@ export default function GpxComparator({ track, tracks, user }) {
 	}
 
 	const stats = getComparisonStats()
-	useEffect(() => {
-		return () => {
-			if (playerIntervalRef.current) {
-				clearInterval(playerIntervalRef.current)
-			}
-		}
-	}, [])
 
 	return (
 		<Card className={styles.container}>
-			<div className={styles.comparisonSetup}>
-				<div className={styles.trackSelection}>
-					<div className={styles.trackCard}>
-						<Text strong>Трек 1 (основной)</Text>
-						<Select
-							placeholder='Выберите первый трек'
-							className={styles.select}
-							size='middle'
-							onChange={trackId => {
-								const selected = tracks.find(t => t.id === trackId)
-								setSelectedTrack1(selected)
-							}}
-							value={selectedTrack1?.id}
-							disabled={loading}
-						>
-							{tracks.map(t => (
-								<Option key={t.id} value={t.id}>
-									{t.filename} ({Math.floor(t.time / 60)}:
-									{(t.time % 60).toString().padStart(2, '0')})
-								</Option>
-							))}
-						</Select>
-						{selectedTrack1 && (
-							<div className={styles.selectedTrackInfo}>
-								<Text className={styles.trackName}>
-									{selectedTrack1.filename}
-								</Text>
-								<Text type='secondary' className={styles.trackTime}>
-									{Math.floor(selectedTrack1.time / 60)}:
-									{(selectedTrack1.time % 60).toString().padStart(2, '0')}
-								</Text>
-							</div>
-						)}
+			{/* Карта */}
+			<div className={styles.mapSection}>
+				<Card size='small' title='Карта сравнения'>
+					<div
+						ref={mapRef}
+						style={{
+							width: '100%',
+							height: '400px',
+							borderRadius: '8px',
+							overflow: 'hidden',
+							border: '1px solid #f0f0f0',
+						}}
+					/>
+					<div
+						style={{
+							padding: '8px',
+							background: '#fafafa',
+							borderTop: '1px solid #f0f0f0',
+							fontSize: '12px',
+							color: '#666',
+						}}
+					>
+						Синий: {track1?.filename} • Красный: {track2?.filename}
 					</div>
-
-					<div className={styles.vsLabel}>VS</div>
-
-					<div className={styles.trackCard}>
-						<Text strong>Трек 2 (для сравнения)</Text>
-						<Select
-							placeholder='Выберите второй трек'
-							className={styles.select}
-							size='middle'
-							onChange={trackId => {
-								const selected = tracks.find(t => t.id === trackId)
-								setSelectedTrack2(selected)
-							}}
-							value={selectedTrack2?.id}
-							disabled={loading || !selectedTrack1}
-						>
-							{tracks
-								.filter(t => !selectedTrack1 || t.id !== selectedTrack1.id)
-								.map(t => (
-									<Option key={t.id} value={t.id}>
-										{t.filename} ({Math.floor(t.time / 60)}:
-										{(t.time % 60).toString().padStart(2, '0')})
-									</Option>
-								))}
-						</Select>
-						{selectedTrack2 && (
-							<div className={styles.selectedTrackInfo}>
-								<Text className={styles.trackName}>
-									{selectedTrack2.filename}
-								</Text>
-								<Text type='secondary' className={styles.trackTime}>
-									{Math.floor(selectedTrack2.time / 60)}:
-									{(selectedTrack2.time % 60).toString().padStart(2, '0')}
-								</Text>
-							</div>
-						)}
-					</div>
-				</div>
-
-				{selectedTrack1 && selectedTrack2 && (
-					<>
-						<div className={styles.controls}>
-							<Button
-								type={isPlaying ? 'default' : 'primary'}
-								icon={
-									isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />
-								}
-								onClick={handlePlayPause}
-								disabled={
-									track1Points.length === 0 || track2Points.length === 0
-								}
-							>
-								{isPlaying ? 'Пауза' : 'Старт'}
-							</Button>
-							<Button
-								onClick={() => setCurrentPointIndex(0)}
-								disabled={currentPointIndex === 0 || isPlaying}
-							>
-								Сбросить
-							</Button>
-							<Text type='secondary' className={styles.controlHint}>
-								{isPlaying
-									? `Точка ${currentPointIndex + 1} из ${Math.min(
-											track1Points.length,
-											track2Points.length
-									  )}`
-									: 'Запускает одновременное движение двух точек по трекам'}
-							</Text>
-						</div>
-
-						{/* Добавьте карту */}
-						<div className={styles.mapSection}>
-							<ComparisonMap
-								track1Points={track1Points}
-								track2Points={track2Points}
-								currentIndex={currentPointIndex}
-								isPlaying={isPlaying}
-							/>
-						</div>
-					</>
-				)}
+				</Card>
 			</div>
 
-			{loading ? (
-				<div className={styles.loading}>
-					<Spin size='large' />
-					<Text type='secondary'>Загрузка треков для сравнения...</Text>
-				</div>
-			) : selectedTrack1 && selectedTrack2 && stats ? (
-				<>
-					<Tabs defaultActiveKey='stats' className={styles.tabs}>
-						<TabPane tab='Статистика' key='stats' icon={<BarChartOutlined />}>
-							<div className={styles.statsGrid}>
-								<Row gutter={[16, 16]}>
-									<Col span={12}>
-										<Card size='small'>
-											<Statistic
-												title='Макс. отставание (расстояние)'
-												value={stats.maxDistanceLag}
-												suffix='м'
-												valueStyle={{ color: '#cf1322' }}
-											/>
-										</Card>
-									</Col>
-									<Col span={12}>
-										<Card size='small'>
-											<Statistic
-												title='Макс. отставание (время)'
-												value={stats.maxTimeLag}
-												suffix='сек'
-												valueStyle={{ color: '#cf1322' }}
-											/>
-										</Card>
-									</Col>
-									<Col span={12}>
-										<Card size='small'>
-											<Statistic
-												title='Среднее отставание (расстояние)'
-												value={stats.avgDistanceLag}
-												suffix='м'
-												valueStyle={{ color: '#1890ff' }}
-											/>
-										</Card>
-									</Col>
-									<Col span={12}>
-										<Card size='small'>
-											<Statistic
-												title='Среднее отставание (время)'
-												value={stats.avgTimeLag}
-												suffix='сек'
-												valueStyle={{ color: '#1890ff' }}
-											/>
-										</Card>
-									</Col>
-								</Row>
-							</div>
-						</TabPane>
+			{/* Информация о треках */}
+			<div className={styles.trackInfoHeader}>
+				<Row gutter={[16, 16]}>
+					<Col span={12}>
+						<Card size='small'>
+							<Text strong>Трек 1</Text>
+							<div className={styles.trackName}>{track1?.filename}</div>
+							<Text type='secondary'>
+								{track1?.time
+									? `${Math.floor(track1.time / 60)}:${(track1.time % 60)
+											.toString()
+											.padStart(2, '0')}`
+									: ''}
+							</Text>
+						</Card>
+					</Col>
+					<Col span={12}>
+						<Card size='small'>
+							<Text strong>Трек 2</Text>
+							<div className={styles.trackName}>{track2?.filename}</div>
+							<Text type='secondary'>
+								{track2?.time
+									? `${Math.floor(track2.time / 60)}:${(track2.time % 60)
+											.toString()
+											.padStart(2, '0')}`
+									: ''}
+							</Text>
+						</Card>
+					</Col>
+				</Row>
+			</div>
 
-						<TabPane
-							tab='Ключевые участки'
-							key='segments'
-							icon={<AreaChartOutlined />}
-						>
-							{keySegments.length > 0 ? (
-								<div className={styles.segmentsList}>
-									{keySegments.map((segment, index) => (
-										<Card
-											key={index}
-											size='small'
-											className={styles.segmentCard}
-										>
-											<Row gutter={[16, 8]}>
-												<Col span={12}>
-													<Text strong>Участок {index + 1}</Text>
-													<Text
-														type='secondary'
-														className={styles.segmentRange}
-													>
-														Точки: {segment.startIndex + 1} -{' '}
-														{segment.endIndex + 1}
-													</Text>
-												</Col>
-												<Col span={12}>
-													<Statistic
-														title='Среднее отставание'
-														value={segment.avgDistance.toFixed(1)}
-														suffix='м'
-														size='small'
-													/>
-												</Col>
-											</Row>
-										</Card>
-									))}
-								</div>
-							) : (
-								<Empty description='Недостаточно данных для анализа участков' />
-							)}
-						</TabPane>
-
-						<TabPane tab='Графики' key='charts' icon={<LineChartOutlined />}>
-							<Alert
-								message='Графики скоростей и высот в разработке'
-								description='Совмещенные графики скоростей и высот появятся в следующем обновлении.'
-								type='info'
-								showIcon
-							/>
-						</TabPane>
-					</Tabs>
-				</>
-			) : selectedTrack2 ? (
-				<Alert
-					message='Недостаточно данных'
-					description='Для сравнения необходимо загрузить точки обоих треков'
-					type='warning'
-					showIcon
-				/>
-			) : (
-				<Alert
-					message='Выберите второй трек'
-					description='Выберите трек для сравнения из выпадающего списка'
-					type='info'
-					showIcon
-				/>
-			)}
+			{/* Остальной код остается... */}
 		</Card>
 	)
 }

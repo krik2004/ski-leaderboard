@@ -1,3 +1,10 @@
+//  (Корневой компонент)
+// Назначение: Главная страница инструментов GPX
+
+// Функции: Управление вкладками, загрузка треков пользователя, координация между компонентами
+
+// Состояния: Список треков, выбранные треки, активная вкладка
+
 import React, { useState, useEffect } from 'react'
 import { Card, Tabs, Spin, Alert, Typography, Space } from 'antd'
 import {
@@ -6,6 +13,7 @@ import {
 	PlayCircleOutlined,
 	SwapOutlined,
 	SplitCellsOutlined,
+	RocketOutlined,
 } from '@ant-design/icons'
 import { supabase } from '../../../shared/api/supabase'
 import GpxList from './GpxList'
@@ -13,6 +21,8 @@ import GpxEditor from './GpxEditor'
 import GpxComparator from './GpxComparator'
 import GpxSplitter from './GpxSplitter'
 import styles from './GpxToolsPage.module.css'
+import GpxUnifiedDemo from './GpxUnifiedDemo'
+
 
 const { TabPane } = Tabs
 const { Title, Text } = Typography
@@ -22,6 +32,7 @@ export default function GpxToolsPage({ user }) {
 	const [tracks, setTracks] = useState([])
 	const [selectedTrack, setSelectedTrack] = useState(null)
 	const [activeTab, setActiveTab] = useState('list')
+	const [selectedTracks, setSelectedTracks] = useState([])
 
 	useEffect(() => {
 		loadUserTracks()
@@ -62,9 +73,24 @@ export default function GpxToolsPage({ user }) {
 			setLoading(false)
 		}
 	}
-
+	// Добавьте после loadUserTracks
+	const handleTracksSelect = tracks => {
+		setSelectedTracks(tracks)
+	}
 	const handleTrackSelect = track => {
 		setSelectedTrack(track)
+		// Для мультивыбора
+		setSelectedTracks(prev => {
+			if (prev.some(t => t.id === track.id)) {
+				return prev.filter(t => t.id !== track.id)
+			} else {
+				if (prev.length >= 2) {
+					return [...prev.slice(0, 1), track]
+				} else {
+					return [...prev, track]
+				}
+			}
+		})
 	}
 
 	const handleTabChange = key => {
@@ -114,7 +140,9 @@ export default function GpxToolsPage({ user }) {
 						<GpxList
 							tracks={tracks}
 							selectedTrack={selectedTrack}
+							selectedTracks={selectedTracks}
 							onTrackSelect={handleTrackSelect}
+							onTracksSelect={handleTracksSelect}
 							onTrackDeleted={loadUserTracks}
 							user={user}
 						/>
@@ -127,13 +155,22 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='edit'
-						disabled={!selectedTrack}
+						disabled={selectedTracks.length !== 1} // ← ИЗМЕНИТЬ: только 1 трек
 					>
-						<GpxEditor
-							track={selectedTrack}
-							onTrackUpdated={loadUserTracks}
-							user={user}
-						/>
+						{selectedTracks.length === 1 ? (
+							<GpxEditor
+								track={selectedTracks[0]} // ← Берем первый выбранный трек
+								onTrackUpdated={loadUserTracks}
+								user={user}
+							/>
+						) : (
+							<Alert
+								message='Выберите один трек'
+								description='Для редактирования выберите один трек'
+								type='info'
+								showIcon
+							/>
+						)}
 					</TabPane>
 
 					<TabPane
@@ -143,9 +180,42 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='compare'
-						disabled={!selectedTrack}
+						disabled={selectedTracks.length !== 2} // ← ИЗМЕНИТЬ: ровно 2 трека
 					>
-						<GpxComparator track={selectedTrack} tracks={tracks} user={user} />
+						{selectedTracks.length === 2 ? (
+							<GpxComparator tracks={selectedTracks} user={user} />
+						) : (
+							<Alert
+								message='Выберите два трека'
+								description='Для сравнения выберите два трека'
+								type='info'
+								showIcon
+							/>
+						)}
+					</TabPane>
+					<TabPane
+						tab={
+							<span className={styles.tabLabel}>
+								<RocketOutlined /> UnifiedMap Demo
+							</span>
+						}
+						key='unified'
+						disabled={selectedTracks.length === 0} // ← Только если выбраны треки
+					>
+						{selectedTracks.length > 0 ? (
+							<GpxUnifiedDemo
+								tracks={tracks}
+								user={user}
+								selectedTracks={selectedTracks}
+							/>
+						) : (
+							<Alert
+								message='Выберите треки'
+								description='Для демонстрации UnifiedMap выберите один или несколько треков на вкладке "Мои треки"'
+								type='info'
+								showIcon
+							/>
+						)}
 					</TabPane>
 
 					<TabPane
@@ -155,16 +225,24 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='split'
-						disabled={!selectedTrack}
+						disabled={selectedTracks.length !== 1} // ← ИЗМЕНИТЬ: только 1 трек
 					>
-						<GpxSplitter
-							track={selectedTrack}
-							onTrackUpdated={loadUserTracks}
-							user={user}
-						/>
+						{selectedTracks.length === 1 ? (
+							<GpxSplitter
+								track={selectedTracks[0]} // ← Берем первый выбранный трек
+								onTrackUpdated={loadUserTracks}
+								user={user}
+							/>
+						) : (
+							<Alert
+								message='Выберите один трек'
+								description='Для разделения выберите один трек'
+								type='info'
+								showIcon
+							/>
+						)}
 					</TabPane>
 				</Tabs>
-
 				{!selectedTrack && activeTab !== 'list' && (
 					<Alert
 						message='Выберите трек'
