@@ -173,7 +173,7 @@ export default function GpxToolsPage({ user }) {
 						)}
 					</TabPane>
 
-					<TabPane
+					{/* <TabPane
 						tab={
 							<span className={styles.tabLabel}>
 								<SwapOutlined /> Сравнить
@@ -192,11 +192,11 @@ export default function GpxToolsPage({ user }) {
 								showIcon
 							/>
 						)}
-					</TabPane>
+					</TabPane> */}
 					<TabPane
 						tab={
 							<span className={styles.tabLabel}>
-								<RocketOutlined /> UnifiedMap Demo
+								<RocketOutlined /> Сравнить треки (в разработке)
 							</span>
 						}
 						key='unified'
