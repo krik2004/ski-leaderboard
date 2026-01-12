@@ -20,6 +20,8 @@ import {
 import { supabase } from '../../../shared/api/supabase'
 import styles from './Auth.module.css' // ← Импорт стилей из той же папки
 
+
+
 const { Title, Text, Paragraph } = Typography
 
 export default function Auth({ onLoginSuccess }) {

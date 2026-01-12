@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Tabs, Button, Card, Spin, message } from 'antd'
+import { Layout, Tabs, Button, Card, Spin, message, Modal } from 'antd'
 import {
 	TrophyOutlined,
 	PlusOutlined,
@@ -23,6 +23,8 @@ import Map from './widgets/Map'
 
 import { EnvironmentOutlined } from '@ant-design/icons'
 
+
+
 import './styles/base.css'
 import './styles/components.css'
 import './styles/utilities.css'
@@ -44,6 +46,7 @@ function App() {
 		return saved || 'leaderboard'
 	})
 	const [isMobile, setIsMobile] = useState(false)
+const [authModalVisible, setAuthModalVisible] = useState(false)
 
 	// Определяем мобильное устройство
 	useEffect(() => {
@@ -243,7 +246,7 @@ function App() {
 							<Button
 								type='text'
 								icon={<UserOutlined />}
-								onClick={() => setActiveTab('profile')}
+								onClick={() => setAuthModalVisible(true)}
 								style={{
 									display: 'flex',
 									alignItems: 'center',
@@ -281,7 +284,7 @@ function App() {
 							</Button>
 							<Button
 								type='primary'
-								onClick={() => setActiveTab('profile')}
+								onClick={() => setAuthModalVisible(true)}
 								size={isMobile ? 'small' : 'middle'}
 							>
 								Войти
@@ -289,6 +292,23 @@ function App() {
 						</>
 					)}
 				</div>
+				<Modal
+					title='Авторизация'
+					open={authModalVisible}
+					onCancel={() => setAuthModalVisible(false)}
+					footer={null}
+					width={500}
+					centered
+					destroyOnClose
+				>
+					<Auth
+						onLoginSuccess={userData => {
+							setUser(userData)
+							setAuthModalVisible(false)
+							message.success('Вход выполнен успешно!')
+						}}
+					/>
+				</Modal>
 			</AntHeader>
 
 			<Content
