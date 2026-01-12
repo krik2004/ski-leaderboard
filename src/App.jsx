@@ -23,19 +23,12 @@ import Map from './widgets/Map'
 
 import { EnvironmentOutlined } from '@ant-design/icons'
 
-
-
 import './styles/base.css'
 import './styles/components.css'
 import './styles/utilities.css'
 import './styles/App.css'
 
-// ... остальной код App.jsx (нужно вставить из backup)
-import './styles/utilities.css'
-import './styles/App.css'
-
 const { Header: AntHeader, Content, Footer } = Layout
-const { TabPane } = Tabs
 
 function App() {
 	const [user, setUser] = useState(null)
@@ -46,7 +39,7 @@ function App() {
 		return saved || 'leaderboard'
 	})
 	const [isMobile, setIsMobile] = useState(false)
-const [authModalVisible, setAuthModalVisible] = useState(false)
+	const [authModalVisible, setAuthModalVisible] = useState(false)
 
 	// Определяем мобильное устройство
 	useEffect(() => {
@@ -69,7 +62,9 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 			const savedTab = localStorage.getItem('ski-track-active-tab')
 			if (
 				savedTab &&
-				['leaderboard', 'map', 'add', 'profile', 'about'].includes(savedTab)
+				['leaderboard', 'tracks', 'map', 'add', 'profile', 'about'].includes(
+					savedTab
+				)
 			) {
 				setActiveTab(savedTab)
 			}
@@ -87,7 +82,7 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 	useEffect(() => {
 		// Загружаем заезды ВСЕГДА, даже для гостей
 		fetchTimes()
-	}, [user]) // Добавляем user в зависимости
+	}, [user])
 
 	async function fetchTimes() {
 		try {
@@ -149,31 +144,6 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 			</div>
 		)
 	}
-	// Если пользователь не авторизован
-	// if (!user) {
-	// 	return (
-	// 		<div
-	// 			style={{
-	// 				minHeight: '100vh',
-	// 				padding: isMobile ? '10px' : '20px',
-	// 				background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-	// 				display: 'flex',
-	// 				alignItems: 'center',
-	// 				justifyContent: 'center',
-	// 			}}
-	// 		>
-	// 			<div
-	// 				style={{
-	// 					width: '100%',
-	// 					maxWidth: '500px',
-	// 					padding: isMobile ? '15px' : '30px',
-	// 				}}
-	// 			>
-	// 				<Auth onLoginSuccess={setUser} />
-	// 			</div>
-	// 		</div>
-	// 	)
-	// }
 
 	const handleTabChange = key => {
 		setActiveTab(key)
@@ -212,7 +182,7 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 							textOverflow: 'ellipsis',
 							maxWidth: isMobile ? '200px' : 'none',
 							display: 'flex',
-							alignItems: 'baseline', // ← Это важно!
+							alignItems: 'baseline',
 						}}
 					>
 						<span>ProTreki</span>
@@ -246,7 +216,7 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 							<Button
 								type='text'
 								icon={<UserOutlined />}
-								onClick={() => setAuthModalVisible(true)}
+								onClick={() => setActiveTab('profile')}
 								style={{
 									display: 'flex',
 									alignItems: 'center',
@@ -292,23 +262,6 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 						</>
 					)}
 				</div>
-				<Modal
-					title='Авторизация'
-					open={authModalVisible}
-					onCancel={() => setAuthModalVisible(false)}
-					footer={null}
-					width={500}
-					centered
-					destroyOnClose
-				>
-					<Auth
-						onLoginSuccess={userData => {
-							setUser(userData)
-							setAuthModalVisible(false)
-							message.success('Вход выполнен успешно!')
-						}}
-					/>
-				</Modal>
 			</AntHeader>
 
 			<Content
@@ -345,7 +298,7 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 									),
 								},
 								{
-									key: 'tracks', // ← НОВАЯ ВКЛАДКА
+									key: 'tracks',
 									label: (
 										<span>
 											<FileOutlined /> Треки
@@ -374,6 +327,21 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 									),
 								},
 								{
+									key: 'profile',
+									label: (
+										<span>
+											<UserOutlined /> Профиль
+										</span>
+									),
+									children: (
+										<Profile
+											user={user}
+											onUpdate={fetchTimes}
+											isMobile={false}
+										/>
+									),
+								},
+								{
 									key: 'about',
 									label: (
 										<span>
@@ -386,7 +354,7 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 						/>
 					</Card>
 				) : (
-					// Мобильная версия без лишних оберток
+					// Мобильная версия
 					<div>
 						<Tabs
 							activeKey={activeTab}
@@ -459,7 +427,7 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 								<AddTimeForm user={user} onTimeAdded={fetchTimes} />
 							)}
 							{activeTab === 'profile' && (
-								<Profile user={user} onUpdate={fetchTimes} />
+								<Profile user={user} onUpdate={fetchTimes} isMobile={true} />
 							)}
 							{activeTab === 'about' && <About />}
 						</div>
@@ -478,6 +446,24 @@ const [authModalVisible, setAuthModalVisible] = useState(false)
 					ProTreki ©2026
 				</Footer>
 			)}
+
+			<Modal
+				title='Авторизация'
+				open={authModalVisible}
+				onCancel={() => setAuthModalVisible(false)}
+				footer={null}
+				width={500}
+				centered
+				destroyOnClose
+			>
+				<Auth
+					onLoginSuccess={userData => {
+						setUser(userData)
+						setAuthModalVisible(false)
+						message.success('Вход выполнен успешно!')
+					}}
+				/>
+			</Modal>
 		</Layout>
 	)
 }
