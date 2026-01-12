@@ -163,7 +163,37 @@ const Leaderboard = ({ times, user, onTimeUpdated, isMobile = false }) => {
 			},
 		})
 	}
+const handleUpdateTime = async updatedData => {
+	try {
+		console.log('Обновление заезда:', editingTime.id, updatedData)
 
+		// Обновляем запись в базе данных
+		const { error } = await supabase
+			.from('lap_times')
+			.update({
+				...updatedData,
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', editingTime.id)
+
+		if (error) {
+			console.error('Ошибка Supabase:', error)
+			throw error
+		}
+
+		message.success('Заезд успешно обновлен!')
+
+		// Закрываем модалку
+		setIsEditModalOpen(false)
+		setEditingTime(null)
+
+		// Обновляем список заездов
+		onTimeUpdated?.()
+	} catch (error) {
+		console.error('Ошибка обновления:', error)
+		message.error('Ошибка обновления данных: ' + error.message)
+	}
+}
 	// Колонки таблицы
 	const columns = [
 		{
@@ -393,11 +423,12 @@ const Leaderboard = ({ times, user, onTimeUpdated, isMobile = false }) => {
 					}}
 					footer={null}
 					width={isMobile ? '90%' : 600}
+					centered
 					destroyOnClose
 				>
 					<EditTimeForm
 						time={editingTime}
-						onUpdate={handleUpdateSuccess}
+						onUpdate={handleUpdateTime} // ← Используем исправленную функцию
 						onDelete={handleDeleteTime}
 						onClose={() => {
 							setIsEditModalOpen(false)

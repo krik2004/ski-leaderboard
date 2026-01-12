@@ -22,7 +22,7 @@ import {
 	FileTextOutlined,
 	EyeOutlined,
 } from '@ant-design/icons'
-import { supabase } from '../../../shared/api/supabase' 
+import { supabase } from '../../../shared/api/supabase'
 import dayjs from 'dayjs'
 
 const { TextArea } = Input
@@ -60,6 +60,43 @@ export default function EditTimeForm({ time, onUpdate, onClose, onDelete }) {
 		}
 	}, [time, form])
 
+
+	// отладка
+
+	useEffect(() => {
+		if (time) {
+			console.log('Исходные данные заезда:', time)
+			console.log('Тип поля date:', typeof time.date)
+			console.log('Значение date:', time.date)
+
+			const totalSeconds = time.time_seconds
+			const mins = Math.floor(totalSeconds / 60)
+			const secs = totalSeconds % 60
+
+			// Парсим дату из базы данных
+			let dateValue
+			if (time.date) {
+				// Пробуем разные форматы
+				try {
+					dateValue = dayjs(time.date)
+					console.log('Дата распарсена как:', dateValue.format())
+				} catch (e) {
+					console.error('Ошибка парсинга даты:', e)
+					dateValue = dayjs()
+				}
+			} else {
+				dateValue = dayjs()
+			}
+
+			form.setFieldsValue({
+				minutes: mins,
+				seconds: secs,
+				date: dateValue,
+				skiModel: time.ski_model || '',
+				comment: time.comment || '',
+			})
+		}
+	}, [time, form])
 	// Функция для транслитерации
 	const transliterate = text => {
 		const ru = {
@@ -182,11 +219,22 @@ export default function EditTimeForm({ time, onUpdate, onClose, onDelete }) {
 		try {
 			let newGpxData = null
 			if (fileList.length > 0) {
-				// Если загружается новый файл и есть старый - удаляем старый
 				if (time.gpx_track_url) {
 					await deleteGpxFile()
 				}
 				newGpxData = await uploadGpxFile(fileList[0])
+			}
+
+			// ФОРМАТИРУЕМ ДАТУ ПРАВИЛЬНО
+			let formattedDate
+			if (date) {
+				// Преобразуем dayjs в ISO строку
+				const dayjsDate = dayjs(date)
+				// Для Supabase timestamptz используем toISOString()
+				formattedDate = dayjsDate.toISOString()
+			} else {
+				// Если дата не указана, используем текущую дату из записи
+				formattedDate = time.date || new Date().toISOString()
 			}
 
 			// Формируем обновленные данные
@@ -194,7 +242,7 @@ export default function EditTimeForm({ time, onUpdate, onClose, onDelete }) {
 				time_seconds: totalSeconds,
 				comment: comment?.trim() || null,
 				ski_model: skiModel?.trim() || null,
-				date: date ? date.toISOString() : time.date,
+				date: formattedDate,
 				updated_at: new Date().toISOString(),
 			}
 
@@ -208,20 +256,20 @@ export default function EditTimeForm({ time, onUpdate, onClose, onDelete }) {
 				updatedData.verified = false
 			}
 
-			// Вызываем callback
+			console.log('Отправка данных для обновления:', updatedData)
+
+			// Вызываем функцию обновления из родительского компонента
 			await onUpdate(updatedData)
 
-			message.success('Заезд успешно обновлен!')
-			setTimeout(() => {
-				onClose()
-			}, 1500)
+			// Сообщение об успехе уже показывается в родительском компоненте
+			// Таймаут для закрытия модалки тоже в родительском компоненте
 		} catch (error) {
 			message.error('Ошибка: ' + error.message)
 		} finally {
 			setLoading(false)
 		}
 	}
-
+	
 	// Обработчик удаления заезда
 	const handleDeleteEntry = async () => {
 		try {
