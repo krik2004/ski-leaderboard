@@ -200,7 +200,7 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='unified'
-						disabled={selectedTracks.length === 0} // ← Только если выбраны треки
+						disabled={selectedTracks.length === 0} 
 					>
 						{selectedTracks.length > 0 ? (
 							<GpxUnifiedDemo
