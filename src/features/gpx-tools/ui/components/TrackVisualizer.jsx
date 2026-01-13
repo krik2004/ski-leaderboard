@@ -77,7 +77,7 @@ const TrackVisualizer = ({
 			try {
 				setLoading(true)
 
-				// Очистка старого слоя
+			
 				if (gpxLayerRef.current) {
 					mapInstanceRef.current.removeLayer(gpxLayerRef.current)
 				}
@@ -103,7 +103,7 @@ const TrackVisualizer = ({
 
 				const points = parsedData.points
 
-				// СОЗДАЕМ GPX СЛОЙ ПЕРЕД ТЕМ КАК ВЕШАТЬ ОБРАБОТЧИКИ
+				
 				gpxLayerRef.current = new L.GPX(gpxUrl, {
 					async: true,
 					polyline_options: {
@@ -115,12 +115,12 @@ const TrackVisualizer = ({
 					marker_options: null,
 				})
 
-				// ТЕПЕРЬ ВЕШАЕМ ОБРАБОТЧИКИ
+		
 				gpxLayerRef.current.on('loaded', e => {
 					console.log('✅ GPX отображен на карте')
 					const track = e.target
 
-					// Если не удалось получить точки из файла, пробуем извлечь из полилинии
+				
 					let finalPoints = points
 					if (points.length === 0) {
 						console.log('🔍 Пробую извлечь точки из полилинии...')
@@ -149,7 +149,7 @@ const TrackVisualizer = ({
 						mapInstanceRef.current.fitBounds(track.getBounds().pad(0.1))
 					}
 
-					// Передаем данные в редактор
+					
 					if (onTrackLoaded) {
 						console.log(
 							'📤 Отправляю данные в редактор, точек:',
@@ -167,7 +167,7 @@ const TrackVisualizer = ({
 					setLoading(false)
 				})
 
-				// ДОБАВЛЯЕМ НА КАРТУ ПОСЛЕ СОЗДАНИЯ
+				
 				gpxLayerRef.current.addTo(mapInstanceRef.current)
 			} catch (error) {
 				console.error('❌ Ошибка создания GPX слоя:', error)
@@ -433,11 +433,11 @@ const TrackVisualizer = ({
 				}
 			}
 
-			// Возвращаем дополнительно totalTime и totalDistance
+			
 			return {
 				points,
-				totalTime, // 3418 секунд
-				totalDistance, // 5720 метров
+				totalTime, 
+				totalDistance,
 			}
 		} catch (error) {
 			console.error('Ошибка при парсинге GPX:', error)
