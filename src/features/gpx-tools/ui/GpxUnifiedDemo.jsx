@@ -40,8 +40,7 @@ export default function GpxUnifiedDemo({
 	return (
 		<Card style={{ minHeight: '600px' }}>
 			<Row gutter={[16, 16]}>
-				{/* Левая панель - настройки */}
-				<Col span={6}>
+					<Col span={6}>
 					<Card size='small' title='Настройки UnifiedMap'>
 						<Text
 							type='secondary'
@@ -141,8 +140,7 @@ export default function GpxUnifiedDemo({
 					</Card>
 				</Col>
 
-				{/* Правая панель - карта */}
-				<Col span={18}>
+						<Col span={18}>
 					<Card
 						size='small'
 						title={`UnifiedMap Demo (${trackUrls.length} треков)`}
