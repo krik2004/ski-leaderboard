@@ -73,7 +73,7 @@ export default function GpxToolsPage({ user }) {
 			setLoading(false)
 		}
 	}
-	// Добавьте после loadUserTracks
+
 	const handleTracksSelect = tracks => {
 		setSelectedTracks(tracks)
 	}
@@ -155,11 +155,11 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='edit'
-						disabled={selectedTracks.length !== 1} // ← ИЗМЕНИТЬ: только 1 трек
+						disabled={selectedTracks.length !== 1} 
 					>
 						{selectedTracks.length === 1 ? (
 							<GpxEditor
-								track={selectedTracks[0]} // ← Берем первый выбранный трек
+								track={selectedTracks[0]} 
 								onTrackUpdated={loadUserTracks}
 								user={user}
 							/>
@@ -180,7 +180,7 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='compare'
-						disabled={selectedTracks.length !== 2} // ← ИЗМЕНИТЬ: ровно 2 трека
+						disabled={selectedTracks.length !== 2} 
 					>
 						{selectedTracks.length === 2 ? (
 							<GpxComparator tracks={selectedTracks} user={user} />
@@ -225,11 +225,11 @@ export default function GpxToolsPage({ user }) {
 							</span>
 						}
 						key='split'
-						disabled={selectedTracks.length !== 1} // ← ИЗМЕНИТЬ: только 1 трек
+						disabled={selectedTracks.length !== 1}
 					>
 						{selectedTracks.length === 1 ? (
 							<GpxSplitter
-								track={selectedTracks[0]} // ← Берем первый выбранный трек
+								track={selectedTracks[0]} 
 								onTrackUpdated={loadUserTracks}
 								user={user}
 							/>
