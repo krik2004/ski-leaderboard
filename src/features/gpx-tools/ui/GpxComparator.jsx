@@ -50,7 +50,7 @@ export default function GpxComparator({ tracks = [], user }) {
 	const [lags, setLags] = useState([])
 	const [keySegments, setKeySegments] = useState([])
 
-	// Инициализация карты (useEffect должен быть внутри компонента)
+	// Инициализация карты 
 	useEffect(() => {
 		if (!mapRef.current || mapInstanceRef.current) return
 
@@ -73,7 +73,7 @@ export default function GpxComparator({ tracks = [], user }) {
 		}
 	}, [])
 
-	// Проверка на 2 трека
+
 	if (tracks.length !== 2) {
 		return (
 			<Card className={styles.container}>
@@ -151,8 +151,7 @@ export default function GpxComparator({ tracks = [], user }) {
 
 	const loading = loading1 || loading2
 
-	// 🔥 ИЛИ проще: создайте кастомный хук который безопасно обрабатывает отсутствие URL
-	// Например:
+
 	const useSafeGpxLoader = url => {
 		const [points, setPoints] = useState([])
 		const [loading, setLoading] = useState(false)
@@ -166,7 +165,7 @@ export default function GpxComparator({ tracks = [], user }) {
 				return
 			}
 
-			// Ваша логика загрузки...
+		
 		}, [url])
 
 		return { points, loading, error, stats }
@@ -174,7 +173,7 @@ export default function GpxComparator({ tracks = [], user }) {
 
 
 
-	// Загрузка треков на карту (этот useEffect тоже должен быть внутри компонента)
+
 	useEffect(() => {
 		if (!mapInstanceRef.current || !track1 || !track2) return
 
@@ -360,7 +359,6 @@ export default function GpxComparator({ tracks = [], user }) {
 				</Row>
 			</div>
 
-			{/* Остальной код остается... */}
 		</Card>
 	)
 }
