@@ -12,7 +12,7 @@ import {
 import { supabase } from './shared/api/supabase'
 import { TbBeta } from 'react-icons/tb'
 
-// Новые импорты из FSD структуры
+
 import { Auth } from './features/auth'
 import { Profile } from './features/profile'
 import { AddTimeForm } from './features/lap-times'
@@ -41,7 +41,7 @@ function App() {
 	const [isMobile, setIsMobile] = useState(false)
 	const [authModalVisible, setAuthModalVisible] = useState(false)
 
-	// Определяем мобильное устройство
+
 	useEffect(() => {
 		const checkMobile = () => {
 			setIsMobile(window.innerWidth <= 768)
@@ -58,7 +58,7 @@ function App() {
 			setUser(session?.user || null)
 			setLoading(false)
 
-			// ВОССТАНАВЛИВАЕМ активную вкладку из localStorage
+		
 			const savedTab = localStorage.getItem('ski-track-active-tab')
 			if (
 				savedTab &&
@@ -80,7 +80,7 @@ function App() {
 	}, [])
 
 	useEffect(() => {
-		// Загружаем заезды ВСЕГДА, даже для гостей
+		
 		fetchTimes()
 	}, [user])
 
