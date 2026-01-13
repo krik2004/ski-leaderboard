@@ -60,7 +60,7 @@ const useGpxLoader = gpxUrl => {
 					setPoints(pointsArray)
 
 					// Получаем статистику из расширений GPX
-					// Исправляем на правильный метод
+					
 					const extensionData = track.get_duration_string
 						? track.get_duration_string()
 						: null
