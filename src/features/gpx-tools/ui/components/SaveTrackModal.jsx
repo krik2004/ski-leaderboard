@@ -27,7 +27,7 @@ const SaveTrackModal = ({
 	loading = false,
 }) => {
 	const [form] = Form.useForm()
-	const [saveOption, setSaveOption] = useState('new') // 'new' или 'overwrite'
+	const [saveOption, setSaveOption] = useState('new')
 
 	// Генерируем имя файла с timestamp
 	const generateFilename = baseName => {
@@ -45,7 +45,7 @@ const SaveTrackModal = ({
 		return `${nameWithoutExt}_${timestamp}.gpx`
 	}
 
-	// Сбрасываем форму при открытии
+
 	useEffect(() => {
 		if (visible) {
 			const suggestedName = generateFilename(originalFilename)
@@ -62,7 +62,7 @@ const SaveTrackModal = ({
 		const value = e.target.value
 		setSaveOption(value)
 
-		// Если переключились на "новый", обновляем имя файла
+	
 		if (value === 'new') {
 			const suggestedName = generateFilename(originalFilename)
 			form.setFieldValue('filename', suggestedName)
@@ -73,20 +73,20 @@ const SaveTrackModal = ({
 		try {
 			const values = await form.validateFields()
 
-			// Убеждаемся, что у файла есть расширение .gpx
+		
 			let filename = values.filename || ''
 			if (saveOption === 'new') {
-				// Добавляем .gpx если его нет
+				
 				if (filename && !filename.toLowerCase().endsWith('.gpx')) {
 					filename = filename + '.gpx'
 				}
 
-				// Если имя пустое, генерируем автоматически
+				
 				if (!filename || filename === '.gpx') {
 					filename = generateFilename(originalFilename)
 				}
 			} else {
-				// Для перезаписи используем оригинальное имя
+	
 				filename = originalFilename || 'track.gpx'
 			}
 
@@ -147,7 +147,7 @@ const SaveTrackModal = ({
 						rules={[
 							{ required: true, message: 'Введите имя файла' },
 							{
-								pattern: /^[^.]*$/i, // ← ИЗМЕНИЛИ: не проверяем .gpx в поле ввода
+								pattern: /^[^.]*$/i, 
 								message:
 									'Не указывайте расширение .gpx - оно добавится автоматически',
 							},
