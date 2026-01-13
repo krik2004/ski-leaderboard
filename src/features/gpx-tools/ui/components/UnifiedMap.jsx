@@ -65,7 +65,7 @@ const UnifiedMap = ({
 	const [mapReady, setMapReady] = useState(false)
 	const [loadedTracks, setLoadedTracks] = useState([]) // массив загруженных треков с точками
 
-	// 1. ИНИЦИАЛИЗАЦИЯ КАРТЫ (основной useEffect)
+	// 1. ИНИЦИАЛИЗАЦИЯ КАРТЫ
 	useEffect(() => {
 		if (!mapContainerRef.current || mapInstanceRef.current) return
 
@@ -95,7 +95,7 @@ const UnifiedMap = ({
 				setMapReady(false)
 			}
 		}
-	}, []) // Только при монтировании
+	}, []) 
 
 	// 2. ЗАГРУЗКА ТРЕКОВ (GPX)
 	useEffect(() => {
