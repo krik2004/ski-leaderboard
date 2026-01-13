@@ -1,14 +1,5 @@
 // (Плеер треков)
 // Назначение: Анимированное воспроизведение трека на карте
-// Функции:
-// Контроль воспроизведения (play/pause)
-// Регулировка скорости
-
-// Отображение текущей скорости
-
-// Маркер максимальной скорости (медалька)
-
-// Интеграция: Синхронизация с картой через Leaflet маркеры
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
@@ -56,9 +47,9 @@ const TrackPlayer = ({
 	const markerRef = useRef(null)
 	const startTimeRef = useRef(null)
 	const lastSpeedRef = useRef('—')
-	const [pauseTime, setPauseTime] = useState(0) // ← ДОБАВИМ
-	const [accumulatedTime, setAccumulatedTime] = useState(0) // ← ДОБАВИМ
-	const [maxSpeedPoint, setMaxSpeedPoint] = useState(null) // Точка с макс. скоростью
+	const [pauseTime, setPauseTime] = useState(0)
+	const [accumulatedTime, setAccumulatedTime] = useState(0) 
+	const [maxSpeedPoint, setMaxSpeedPoint] = useState(null) 
 
 	const totalPoints = endIndex || trackPoints.length - 1
 	const effectivePoints = trackPoints.slice(startIndex, totalPoints + 1)
@@ -72,8 +63,8 @@ const TrackPlayer = ({
 		const speeds = []
 		let prevPoint = effectivePoints[0]
 		let maxSpeed = 0
-		let maxSpeedIndex = -1 // ← ДОБАВЛЯЕМ
-		let maxSpeedPointData = null // ← ДОБАВЛЯЕМ
+		let maxSpeedIndex = -1 
+		let maxSpeedPointData = null
 
 		for (let i = 1; i < effectivePoints.length; i++) {
 			const currentPoint = effectivePoints[i]
@@ -89,17 +80,17 @@ const TrackPlayer = ({
 			if (prevPoint.timestamp && currentPoint.timestamp) {
 				const timeDiff = (currentPoint.timestamp - prevPoint.timestamp) / 1000 // секунды
 				if (timeDiff > 0) {
-					const speed = (distance / timeDiff) * 3.6 // км/ч
+					const speed = (distance / timeDiff) * 3.6 
 					speeds.push(speed)
 
-					// ← ДОБАВЛЯЕМ: запоминаем точку максимальной скорости
+					
 					if (speed > maxSpeed) {
 						maxSpeed = speed
-						maxSpeedIndex = i // Индекс текущей точки
+						maxSpeedIndex = i 
 						maxSpeedPointData = {
-							point: currentPoint, // Точка, где закончился сегмент с макс. скоростью
+							point: currentPoint, 
 							speed: speed.toFixed(1),
-							index: i + startIndex, // Абсолютный индекс в треке
+							index: i + startIndex, 
 							distance: distance,
 							timeDiff: timeDiff,
 						}
@@ -136,13 +127,12 @@ const TrackPlayer = ({
 			mapInstance.removeLayer(markerRef.current)
 		}
 
-		// ← ДОБАВЛЯЕМ: удаляем старую медальку
+		
 		if (window.maxSpeedMarker) {
 			mapInstance.removeLayer(window.maxSpeedMarker)
 			window.maxSpeedMarker = null
 		}
 
-		// Создаем новый маркер (зеленый кружок)
 		const icon = L.divIcon({
 			className: styles.playerMarker,
 			html: `
@@ -177,7 +167,7 @@ const TrackPlayer = ({
 				.bindPopup(`Точка ${currentPointIndex + 1}`)
 		}
 
-		// ← ДОБАВЛЯЕМ: создаем маркер максимальной скорости (медалька)
+	
 		if (maxSpeedPoint && maxSpeedPoint.point) {
 			const medalIcon = L.divIcon({
 				className: styles.medalMarker,
@@ -230,9 +220,9 @@ const TrackPlayer = ({
       </div>
     </div>
   `,
-				iconSize: [30, 30], // ← ФИКСИРОВАННЫЙ РАЗМЕР
-				iconAnchor: [15, 15], // ← ЦЕНТРИРОВАНИЕ (15 = 30/2)
-				popupAnchor: [0, -15], // ← POPUP ПОЯВЛЯЕТСЯ НАД МАРКЕРОМ
+				iconSize: [30, 30], 
+				iconAnchor: [15, 15], 
+				popupAnchor: [0, -15], 
 			})
 
 			window.maxSpeedMarker = L.marker(
@@ -254,7 +244,7 @@ const TrackPlayer = ({
 			if (markerRef.current && mapInstance) {
 				mapInstance.removeLayer(markerRef.current)
 			}
-			// ← ДОБАВЛЯЕМ: очищаем медальку при размонтировании
+			
 			if (window.maxSpeedMarker && mapInstance) {
 				mapInstance.removeLayer(window.maxSpeedMarker)
 				window.maxSpeedMarker = null
@@ -290,12 +280,12 @@ const TrackPlayer = ({
 
 		setIsPlaying(true)
 
-		// Рассчитываем время, которое должно было пройти для достижения текущей точки
+
 		const pointsFromStart = currentPointIndex - startIndex
 		const timeForCurrentPoint = (pointsFromStart / playbackSpeed) * 1000
 
 		startTimeRef.current = Date.now() - timeForCurrentPoint
-		speedBufferRef.current = [] // Сбрасываем буфер скоростей
+		speedBufferRef.current = []
 
 		playerIntervalRef.current = setInterval(() => {
 			const elapsed = Date.now() - startTimeRef.current
@@ -321,17 +311,17 @@ const TrackPlayer = ({
 				const rawSpeed = calculateCurrentSpeed(newIndex)
 
 				if (rawSpeed !== '—' && rawSpeed !== '0.0') {
-					// Добавляем в буфер
+					
 					const speedValue = parseFloat(rawSpeed)
 					if (!isNaN(speedValue)) {
 						speedBufferRef.current.push(speedValue)
 
-						// Держим буфер ограниченного размера
+						
 						if (speedBufferRef.current.length > BUFFER_SIZE) {
 							speedBufferRef.current.shift()
 						}
 
-						// Рассчитываем среднее
+			
 						const avgSpeed =
 							speedBufferRef.current.length > 0
 								? (
@@ -359,7 +349,7 @@ const TrackPlayer = ({
 		if (playerIntervalRef.current) {
 			clearInterval(playerIntervalRef.current)
 			playerIntervalRef.current = null
-			startTimeRef.current = null // ← СБРАСЫВАЕМ ВРЕМЯ НАЧАЛА
+			startTimeRef.current = null
 		}
 	}
 
@@ -372,23 +362,23 @@ const TrackPlayer = ({
 				return '0.0'
 			}
 
-			// 1. ИСПОЛЬЗУЕМ СРЕДНЮЮ СКОРОСТЬ НА ПРОМЕЖУТКЕ (5 точек вперед)
-			const lookbackPoints = 3 // Берем несколько предыдущих точек
-			const lookforwardPoints = 2 // И несколько следующих
+		
+			const lookbackPoints = 3 
+			const lookforwardPoints = 2 
 
 			let totalDistance = 0
 			let totalTime = 0
 			let validPoints = 0
 
-			// Проверяем, что у нас достаточно точек для анализа
+			
 			const minIndex = Math.max(startIndex, pointIndex - lookbackPoints)
 			const maxIndex = Math.min(totalPoints, pointIndex + lookforwardPoints)
 
 			if (maxIndex - minIndex < 2) {
-				return calculateInstantSpeed(pointIndex) // Если мало точек, используем мгновенную
+				return calculateInstantSpeed(pointIndex) 
 			}
 
-			// 2. Считаем общее расстояние и время на промежутке
+	
 			for (let i = minIndex; i < maxIndex; i++) {
 				const currentIdx = i
 				const nextIdx = i + 1
@@ -406,7 +396,7 @@ const TrackPlayer = ({
 
 				if (!prevPoint || !currentPoint) continue
 
-				// Получаем время точек
+				
 				let prevTime =
 					prevPoint.timestamp ||
 					(prevPoint.time ? new Date(prevPoint.time).getTime() : null)
@@ -416,7 +406,7 @@ const TrackPlayer = ({
 
 				if (!prevTime || !currTime || prevTime === currTime) continue
 
-				// Рассчитываем расстояние
+			
 				const distance = calculateDistance(
 					prevPoint.lat,
 					prevPoint.lng,
@@ -433,18 +423,18 @@ const TrackPlayer = ({
 				validPoints++
 			}
 
-			// 3. Если удалось посчитать, возвращаем среднюю скорость
+		
 			if (validPoints > 0 && totalTime > 0) {
 				return ((totalDistance / totalTime) * 3.6).toFixed(1) // км/ч
 			}
 
-			// 4. Если не удалось, используем мгновенную скорость
+	
 			return calculateInstantSpeed(pointIndex)
 		},
 		[effectivePoints, startIndex]
 	)
 
-	// Добавляем вспомогательную функцию для мгновенной скорости
+
 	const calculateInstantSpeed = useCallback(
 		pointIndex => {
 			if (
@@ -483,13 +473,12 @@ const TrackPlayer = ({
 		[effectivePoints, startIndex]
 	)
 
-	// Добавляем useRef для хранения последних скоростей (скользящее среднее)
+	
 	const speedBufferRef = useRef([])
-	const BUFFER_SIZE = 5 // Размер буфера для сглаживания
-
+	const BUFFER_SIZE = 5
 	const handleSpeedChange = value => {
 		setPlaybackSpeed(value)
-		// setAccumulatedTime(0) ← УДАЛИТЬ
+		
 
 		if (isPlaying) {
 			stopPlayback()
@@ -525,7 +514,7 @@ const TrackPlayer = ({
 		const speed = calculateCurrentSpeed(newIndex)
 		setCurrentSpeed(speed)
 
-		// Если проигрывание было активно, перезапускаем с новой позиции
+	
 		if (isPlaying) {
 			stopPlayback()
 			setTimeout(() => startPlayback(), 10)
@@ -541,14 +530,14 @@ const TrackPlayer = ({
 		const speed = calculateCurrentSpeed(newIndex)
 		setCurrentSpeed(speed)
 
-		// Если проигрывание было активно, перезапускаем с новой позиции
+		
 		if (isPlaying) {
 			stopPlayback()
 			setTimeout(() => startPlayback(), 10)
 		}
 	}
 
-	// useEffect очистки:
+	
 	useEffect(() => {
 		return () => {
 			if (playerIntervalRef.current) {
@@ -557,7 +546,7 @@ const TrackPlayer = ({
 			if (markerRef.current && mapInstance) {
 				mapInstance.removeLayer(markerRef.current)
 			}
-			// ← ДОБАВЛЯЕМ: очищаем глобальную медальку
+			
 			if (window.maxSpeedMarker && mapInstance) {
 				mapInstance.removeLayer(window.maxSpeedMarker)
 				window.maxSpeedMarker = null
