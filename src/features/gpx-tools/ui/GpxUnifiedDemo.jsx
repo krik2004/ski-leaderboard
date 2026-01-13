@@ -37,14 +37,6 @@ export default function GpxUnifiedDemo({
 	const trackUrls = selectedTracks.map(track => track.url).filter(Boolean)
 	const trackNames = selectedTracks.map(track => track.filename)
 
-	// Функция для центрирования карты (если нужна будет)
-	const handleCenterMap = () => {
-		if (window.demoMap) {
-			// Можно добавить логику центрирования
-			console.log('Центрирую карту...')
-		}
-	}
-
 	return (
 		<Card style={{ minHeight: '600px' }}>
 			<Row gutter={[16, 16]}>
@@ -226,7 +218,7 @@ export default function GpxUnifiedDemo({
 								}
 								onMapReady={map => {
 									console.log('✅ UnifiedMap готова:', map)
-									window.demoMap = map // Для дебага
+									window.demoMap = map 
 								}}
 								onTracksLoaded={tracksData => {
 									console.log('📊 Треки загружены в UnifiedMap:', tracksData)
