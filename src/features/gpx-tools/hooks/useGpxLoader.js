@@ -2,8 +2,6 @@
 
 // Возвращает: точки трека, статистику (дистанция, время, набор высоты), состояния загрузки/ошибки
 
-// Особенности: Асинхронная загрузка, обработка метаданных
-
 import { useState, useEffect, useCallback } from 'react'
 import L from 'leaflet'
 import 'leaflet-gpx'
@@ -59,13 +57,13 @@ const useGpxLoader = gpxUrl => {
 
 					setPoints(pointsArray)
 
-					// Получаем статистику из расширений GPX
+					
 					
 					const extensionData = track.get_duration_string
 						? track.get_duration_string()
 						: null
 
-					// Получаем базовую статистику
+					
 					const totalDistance = track.get_distance ? track.get_distance() : 0
 					const totalTime = track.get_total_time ? track.get_total_time() : 0
 					const elevationGain = track.get_elevation_gain
