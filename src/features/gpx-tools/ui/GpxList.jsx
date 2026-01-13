@@ -32,7 +32,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import styles from './GpxList.module.css'
-import supabase from '../../../supabase' // ← ПУТЬ МОЖЕТ БЫТЬ ДРУГИМ! Проверьте путь
+import supabase from '../../../supabase' 
 
 const { Text } = Typography
 
@@ -42,21 +42,20 @@ export default function GpxList({
 	onTrackSelect,
 	onTrackDeleted,
 	user,
-	selectedTracks, // ← Добавить
-	onTracksSelect, // ← Добавить
+	selectedTracks,
+	onTracksSelect, 
 }) {
 	const [loadingDelete, setLoadingDelete] = useState(null)
-	const [editingTrackId, setEditingTrackId] = useState(null) // ← ДОБАВИТЬ
-	const [editName, setEditName] = useState('') // ← ДОБАВИТЬ
+	const [editingTrackId, setEditingTrackId] = useState(null)
+	const [editName, setEditName] = useState('') 
 
-	// Функция для начала редактирования
+	
 	const startEditing = (track, e) => {
 		e?.stopPropagation()
 		setEditingTrackId(track.id)
 		setEditName(track.filename || '')
 	}
-	// Функция для выбора/снятия выбора трека
-	// Обновите существующую функцию toggleTrackSelection
+
 	const toggleTrackSelection = track => {
 		const newSelectedTracks = selectedTracks.some(t => t.id === track.id)
 			? selectedTracks.filter(t => t.id !== track.id)
@@ -64,12 +63,12 @@ export default function GpxList({
 			? [...selectedTracks.slice(0, 1), track]
 			: [...selectedTracks, track]
 
-		// Передаем выбранные треки в родительский компонент
+	
 		onTracksSelect?.(newSelectedTracks)
 	}
 
 	// Функция для сохранения нового имени
-	// Функция для сохранения нового имени
+
 	const saveEditName = async track => {
 		if (!editName.trim()) {
 			message.warning('Введите название трека')
@@ -77,14 +76,14 @@ export default function GpxList({
 		}
 
 		try {
-			// 1. Получаем текущий URL файла из track
+			
 			const currentUrl = track.url
 
-			// 2. Извлекаем путь к файлу из URL
+			
 			const urlParts = currentUrl.split('/')
 			const oldFilePath = urlParts[urlParts.length - 1]
 
-			// 3. Создаем новое имя файла с .gpx
+		
 			const newFileName = editName.endsWith('.gpx')
 				? editName
 				: `${editName}.gpx`
@@ -96,19 +95,19 @@ export default function GpxList({
 				trackId: track.id,
 			})
 
-			// 4. Копируем файл с новым именем в Storage
+
 			const { data: copyData, error: copyError } = await supabase.storage
 				.from('gpx-tracks')
 				.copy(oldFilePath, newFilePath)
 
 			if (copyError) throw copyError
 
-			// 5. Получаем новый публичный URL
+
 			const { data: urlData } = supabase.storage
 				.from('gpx-tracks')
 				.getPublicUrl(newFilePath)
 
-			// 6. Обновляем запись в таблице lap_times
+
 			const { error: updateError } = await supabase
 				.from('lap_times')
 				.update({
@@ -120,21 +119,15 @@ export default function GpxList({
 
 			if (updateError) throw updateError
 
-			// 7. Удаляем старый файл (опционально)
-			// const { error: deleteError } = await supabase.storage
-			//   .from('gpx-tracks')
-			//   .remove([oldFilePath]);
-			// if (deleteError) console.warn('Не удалось удалить старый файл:', deleteError);
-
 			message.success('Название обновлено')
 			setEditingTrackId(null)
-			onTrackDeleted?.() // Обновляем список
+			onTrackDeleted?.() 
 		} catch (error) {
 			console.error('Ошибка обновления:', error)
 			message.error(`Ошибка при обновлении названия: ${error.message}`)
 		}
 	}
-	// Функция для отмены редактирования
+
 	const cancelEditing = () => {
 		setEditingTrackId(null)
 		setEditName('')
@@ -156,8 +149,7 @@ export default function GpxList({
 	const handleDeleteTrack = async trackId => {
 		setLoadingDelete(trackId)
 		try {
-			// TODO: Удалить из таблицы lap_times
-			// TODO: Удалить файл из Storage
+
 			message.success('Трек удален')
 			onTrackDeleted?.()
 		} catch (error) {
