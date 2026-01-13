@@ -1,12 +1,4 @@
-/**
- * Утилиты для парсинга GPX файлов
- */
 
-/**
-Назначение: Низкоуровневый парсинг GPX XML
-
-Функции: parseGPX (парсинг из текста), getGPXPoints (извлечение из Leaflet слоя)
- */
 export function parseGPX(gpxText) {
 	const points = []
 
