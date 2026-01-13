@@ -145,7 +145,7 @@ export default function GpxEditor({ track, onTrackUpdated, user }) {
 				if (updateError) throw updateError
 				message.success('Трек успешно обновлен!')
 			} else {
-				// Создание нового трека - БЕЗ ПОЛЯ filename
+				
 				const insertData = {
 					user_id: user.id,
 					time_seconds: newTimeSeconds,
