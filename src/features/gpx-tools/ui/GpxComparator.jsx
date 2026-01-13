@@ -6,9 +6,9 @@
 // Особенности: Двухцветное отображение, статистика сравнения
 
 import React, { useState, useEffect, useRef } from 'react'
-import L from 'leaflet' // ← ДОБАВЬТЕ ИМПОРТ L
-import 'leaflet/dist/leaflet.css' // ← ДОБАВЬТЕ
-import 'leaflet-gpx' // ← ДОБАВЬТЕ
+import L from 'leaflet' 
+import 'leaflet/dist/leaflet.css'
+import 'leaflet-gpx' 
 import {
 	Card,
 	Alert,
@@ -91,7 +91,7 @@ export default function GpxComparator({ tracks = [], user }) {
 	const track1 = tracks[0]
 	const track2 = tracks[1]
 
-	// === ОТЛАДКА ===
+	
 	console.log('=== GpxComparator Debug ===')
 	console.log('Tracks array:', tracks)
 	console.log('Track 1 object:', track1)
@@ -100,7 +100,7 @@ export default function GpxComparator({ tracks = [], user }) {
 	console.log('Track 2 filename:', track2?.filename)
 	console.log('Track 1 URL from prop:', track1?.url)
 	console.log('Track 2 URL from prop:', track2?.url)
-	// === КОНЕЦ ОТЛАДКИ ===
+	
 
 	// Функция для получения URL трека
 	const getTrackUrl = track => {
